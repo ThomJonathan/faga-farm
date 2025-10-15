@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import auth from '../../../../lib/auth';
+import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
@@ -24,7 +25,16 @@ export async function POST(request) {
 
     const { username, password } = body;
 
+    // determine if this was a native HTML/form request
+    const accept = (request.headers.get('accept') || '').toLowerCase();
+    const isHtmlRequest = accept.includes('text/html') || contentType.includes('application/x-www-form-urlencoded');
+
     if (!username || !password) {
+      if (isHtmlRequest) {
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('error', 'Username and password are required');
+        return NextResponse.redirect(redirectUrl, 303);
+      }
       return NextResponse.json(
         { message: 'Username and password are required' },
         { status: 400 }
@@ -34,18 +44,31 @@ export async function POST(request) {
     const user = await auth.authenticateUser(username, password);
 
     if (!user) {
+      if (isHtmlRequest) {
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('error', 'Wrong username or password');
+        return NextResponse.redirect(redirectUrl, 303);
+      }
       return NextResponse.json(
-        { message: 'Invalid credentials' },
+        { message: 'Wrong username or password' },
         { status: 401 }
       );
     }
 
     if (!user.is_active) {
+      if (isHtmlRequest) {
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('error', 'Account is inactive');
+        return NextResponse.redirect(redirectUrl, 303);
+      }
       return NextResponse.json(
         { message: 'Account is inactive' },
         { status: 403 }
       );
     }
+
+    // Set user session cookie
+    await auth.setUserSession(user);
 
     // determine redirect path by role
     const role = user.role;
@@ -53,21 +76,17 @@ export async function POST(request) {
     switch (role) {
       case 'admin':
       case 'manager':
-        redirectPath = '/manager/dashboard';
+        redirectPath = '/manager';
         break;
       case 'sales_person':
-        redirectPath = '/sales-person/dashboard';
+        redirectPath = '/sales-person';
         break;
       case 'farm_worker':
-        redirectPath = '/farm-worker/dashboard';
+        redirectPath = '/farm-worker';
         break;
       default:
         redirectPath = '/';
     }
-
-    // If the request expects HTML (native form submit), redirect to dashboard
-    const accept = (request.headers.get('accept') || '').toLowerCase();
-    const isHtmlRequest = accept.includes('text/html') || contentType.includes('application/x-www-form-urlencoded');
 
     if (isHtmlRequest) {
       const redirectUrl = new URL(redirectPath, request.url);
@@ -86,6 +105,16 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Login error:', error);
+    const accept = (request.headers.get('accept') || '').toLowerCase();
+    const contentType = (request.headers.get('content-type') || '').toLowerCase();
+    const isHtmlRequest = accept.includes('text/html') || contentType.includes('application/x-www-form-urlencoded');
+
+    if (isHtmlRequest) {
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('error', 'Internal server error');
+      return NextResponse.redirect(redirectUrl, 303);
+    }
+
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

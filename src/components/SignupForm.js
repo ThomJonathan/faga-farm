@@ -80,7 +80,7 @@ export default function SignupForm() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Image
-            src="/fagaFarm.jpeg"
+            src="/fagaFarm.png"
             alt="Faga Farm Logo"
             width={100}
             height={100}

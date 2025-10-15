@@ -5,7 +5,7 @@ export default function Home() {
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <img
-          src="/fagaFarm.jpeg"
+          src="/fagaFarm.png"
           alt="FAGA Poultry Farm"
           className="mx-auto w-48 h-48 mb-6 rounded-full shadow-lg"
         />

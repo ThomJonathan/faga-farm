@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
-export default function DashboardLayout({ children, role }) {
+export default function DashboardLayout({ children, role, user }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const navigation = {
     farm_worker: [
@@ -32,15 +33,57 @@ export default function DashboardLayout({ children, role }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
+      {/* Top header (fixed) - reusable */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b h-16 flex items-center px-4">
+        <div className="flex items-center space-x-3">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden text-gray-600 p-2 rounded-md hover:bg-gray-100"
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+          <img src="/fagaFarm.png" alt="Faga Farm Logo" className="h-10 w-10 rounded-full" />
+          <div className="hidden sm:block">
+            <div className="text-lg font-semibold text-gray-900">Faga Production Inventory Management System</div>
+            <div className="text-xs text-gray-500">Poultry Farm Management</div>
+          </div>
+        </div>
+
+        {/* spacer */}
+        <div className="flex-1" />
+
+        {/* profile area (right) */}
+        <div className="flex items-center space-x-3">
+          <div className="text-sm text-gray-700 hidden md:block">{user?.name || 'Username'}</div>
+          {/* Profile icon using Heroicons (Tailwind) */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 rounded-full border bg-gray-200 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A9.001 9.001 0 0112 15c2.21 0 4.21.805 5.879 2.146M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+      </header>
+
+      {/* Mobile sidebar (overlay) - appears below header */}
+      <div className={`fixed inset-x-0 top-16 bottom-0 z-50 ${sidebarOpen ? 'block' : 'hidden'} lg:hidden`}>
+        {/* overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-25" onClick={() => setSidebarOpen(false)} />
+        {/* sidebar panel */}
+        <div className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Menu</h2>
+            <div className="flex items-center">
+              <img src="/fagaFarm.png" alt="Faga Farm Logo" className="h-8 w-8 mr-2" />
+              <h2 className="text-lg font-semibold">Faga Production Inventory Management System</h2>
+            </div>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500">✕</button>
           </div>
-          <nav className="p-4">
+          <nav className="p-4 mt-2">
             {currentNav.map((item) => (
               <Link
                 key={item.name}
@@ -56,17 +99,26 @@ export default function DashboardLayout({ children, role }) {
                 {item.name}
               </Link>
             ))}
+            <div className="mt-4 border-t pt-4">
+              <button
+                onClick={async () => {
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                  router.push('/login');
+                  setSidebarOpen(false);
+                }}
+                className="block w-full text-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md"
+              >
+                Logout
+              </button>
+            </div>
           </nav>
         </div>
       </div>
 
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:block">
+      {/* Desktop sidebar - below header */}
+      <aside className="hidden lg:block lg:fixed lg:top-16 lg:left-0 lg:w-64 lg:bottom-0">
         <div className="flex flex-col h-full bg-white shadow-lg">
-          <div className="flex items-center p-4 border-b">
-            <h1 className="text-xl font-bold text-gray-900">Farm Manager</h1>
-          </div>
-          <nav className="flex-1 p-4">
+          <nav className="flex-1 p-4 overflow-auto">
             {currentNav.map((item) => (
               <Link
                 key={item.name}
@@ -83,29 +135,21 @@ export default function DashboardLayout({ children, role }) {
             ))}
           </nav>
           <div className="p-4 border-t">
-            <Link
-              href="/login"
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                router.push('/login');
+              }}
               className="block w-full text-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md"
             >
               Logout
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="lg:pl-64">
-        <div className="sticky top-0 z-10 bg-white border-b lg:hidden">
-          <div className="flex items-center justify-between px-4 py-3">
-            <h1 className="text-lg font-semibold text-gray-900">Farm Manager</h1>
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ☰
             </button>
           </div>
         </div>
+      </aside>
+
+      {/* Main content - push down by header height and pad for sidebar on lg */}
+      <div className="mt-16 lg:pl-64">
         <main className="p-4">
           {children}
         </main>

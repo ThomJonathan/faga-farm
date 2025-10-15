@@ -1,8 +1,14 @@
 import DashboardLayout from '../../components/DashboardLayout';
+import auth from '../../lib/auth';
 
-export default function ManagerDashboard() {
+export default async function ManagerDashboard() {
+  const user = await auth.getUserSession();
+  if (!user) {
+    // Redirect to login if no session
+    return { redirect: '/login' };
+  }
   return (
-    <DashboardLayout role="manager">
+    <DashboardLayout role="manager" user={user}>
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
 

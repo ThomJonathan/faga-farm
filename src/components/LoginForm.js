@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -9,6 +9,16 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const raw = searchParams?.get('error') || searchParams?.get('message') || '';
+    if (raw) {
+      // replace '+' (form-encoded spaces) with space, then decode any percent-encoding
+      const normalized = decodeURIComponent(raw.replace(/\+/g, ' '));
+      setError(normalized);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,14 +34,21 @@ export default function LoginForm() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      // changed: handle non-JSON responses safely
+      let data = {};
+      const ct = response.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (parseErr) {
+          data = {};
+        }
+      }
 
       if (response.ok) {
         // Redirect based on role
-        switch (data.user.role) {
+        switch (data.user?.role) {
           case 'admin':
-            router.push('/manager/dashboard');
-            break;
           case 'manager':
             router.push('/manager/dashboard');
             break;
@@ -45,9 +62,12 @@ export default function LoginForm() {
             router.push('/');
         }
       } else {
-        setError(data.message || 'Login failed');
+        // Show server message if available, otherwise a clear fallback
+        const msg = data?.message || `Login failed${response.status ? ` (${response.status})` : ''}`;
+        setError(msg);
       }
     } catch (err) {
+      // Network or parse error
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -58,6 +78,15 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
         <div>
+          <div className="flex justify-center mb-4">
+            <img
+              src="/fagaFarm.png"
+              alt="Faga Farm Logo"
+              width={100}
+              height={100}
+              className="rounded-full"
+            />
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>

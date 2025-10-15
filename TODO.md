@@ -1,12 +1,12 @@
-# TODO: Implement Signup Page for Faga Farm
+# TODO: Implement User Session Tracking, Display Real Name, and Logout Functionality
 
 ## Steps to Complete
 
-- [x] Install bcryptjs dependency for password hashing
-- [x] Update src/lib/auth.js: Add createUser function to hash password and insert new user; update authenticateUser to hash input password for comparison
-- [x] Create src/components/SignupForm.js: Responsive form with fields for name, username, password, confirm password, email, phone, and role (dropdown). Include Faga logo at the top
-- [x] Create src/app/api/auth/signup/route.js: API route to handle signup, validate inputs, check username uniqueness, and create user
-- [x] Create src/app/signup/page.js: Page component using SignupForm
-- [x] Update src/components/LoginForm.js: Add a link to the signup page
-- [x] Test signup functionality and responsiveness (dev server started, browser testing disabled)
-- [x] Update TODO.md with completed tasks (this file)
+- [x] Add session utilities in `src/lib/auth.js` for setting/getting/clearing user cookies
+- [x] Update `src/app/api/auth/login/route.js` to set a secure cookie with user data on successful login
+- [x] Create `src/app/api/auth/logout/route.js` to clear the session cookie
+- [x] Update `src/components/DashboardLayout.js` to make logout an API call instead of link (desktop and mobile)
+- [x] Update dashboard pages (`farm-worker/page.js`, `sales-person/page.js`, `manager/page.js`) to retrieve user from cookie and pass to DashboardLayout
+- [x] Create `middleware.js` to protect dashboard routes by checking for valid session
+- [x] Test login flow, name display on dashboards, and logout functionality
+- [x] Ensure dashboards redirect to login if no session

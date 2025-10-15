@@ -1,6 +1,7 @@
 // Basic authentication utilities
 const pool = require('./db');
 const bcrypt = require('bcryptjs');
+const { cookies } = require('next/headers');
 
 async function authenticateUser(username, password) {
   try {
@@ -62,4 +63,52 @@ async function checkUsernameExists(username) {
   }
 }
 
-module.exports = { authenticateUser, createUser, getUserById, checkUsernameExists };
+async function setUserSession(user) {
+  const cookieStore = await cookies();
+  const sessionData = JSON.stringify({
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    role: user.role,
+  });
+  cookieStore.set('user_session', sessionData, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+  });
+}
+
+async function getUserSession() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('user_session');
+  if (!sessionCookie) return null;
+  try {
+    return JSON.parse(sessionCookie.value);
+  } catch (error) {
+    console.error('Error parsing session cookie:', error);
+    return null;
+  }
+}
+
+async function clearUserSession() {
+  const cookieStore = await cookies();
+  cookieStore.set('user_session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0,
+    path: '/',
+  });
+}
+
+module.exports = {
+  authenticateUser,
+  createUser,
+  getUserById,
+  checkUsernameExists,
+  setUserSession,
+  getUserSession,
+  clearUserSession
+};
