@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-export default function DashboardLayout({ children, role, user }) {
+export default function DashboardLayout({ children, role, user, currentPage, onPageChange }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function DashboardLayout({ children, role, user }) {
       { name: 'Batches', href: '/farm-worker/batches', icon: '📦' },
       { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🧺' },
       { name: 'Egg Incubation', href: '/farm-worker/egg-incubation', icon: '🌡️' },
-      { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀', comingSoon: true },
+      { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀' },
     ],
     sales_person: [
       { name: 'Dashboard', href: '/sales-person', icon: '🏠' },

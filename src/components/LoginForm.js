@@ -75,80 +75,75 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center mb-4">
-            <img
-              src="/fagaFarm.png"
-              alt="Faga Farm Logo"
-              width={100}
-              height={100}
-              className="rounded-full"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-yellow-50 to-white">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-xl shadow-xl p-8 mx-4">
+          <div className="flex flex-col items-center">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mb-4">
+              <img src="/fagaFarm.png" alt="Faga Farm Logo" className="w-14 h-14 rounded-full" />
+            </div>
+
+            <h1 className="text-center text-2xl font-extrabold text-red-600 tracking-wider">FAGA POULTRY FARM</h1>
+            <p className="text-center text-xs text-gray-500 mt-1">Production Inventory Management System</p>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        {/* changed: add action + method so native (non-JS) submits POST to the API as fallback */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit} action="/api/auth/login" method="post">
-          <div className="rounded-md shadow-sm -space-y-px">
+
+          <form className="mt-6 space-y-5" onSubmit={handleSubmit} action="/api/auth/login" method="post">
             <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
+              <label htmlFor="username" className="sr-only">Username or Email</label>
               <input
                 id="username"
                 name="username"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
+                placeholder="Username or Email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-blue-50 border border-yellow-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-200"
               />
             </div>
+
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
+              <label htmlFor="password" className="sr-only">Password</label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-blue-50 border border-yellow-200 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-200"
               />
             </div>
-          </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
+            {error && (
+              <div className="text-red-600 text-sm text-center">{error}</div>
+            )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-md text-white font-semibold bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 shadow-md disabled:opacity-50"
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <a href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-                Sign up
-              </a>
-            </p>
-          </div>
-        </form>
+            <div className="mt-4">
+              <div className="flex items-center">
+                <div className="flex-grow border-t border-gray-200" />
+                <div className="mx-3 text-xs text-gray-300">OR</div>
+                <div className="flex-grow border-t border-gray-200" />
+              </div>
+
+              <div className="mt-4 text-center space-y-2">
+                <a href="/signup" className="block text-sm text-red-500 hover:underline">Create new account</a>
+                <a href="/forgot-password" className="block text-sm text-red-400 hover:underline">Forgot your password?</a>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

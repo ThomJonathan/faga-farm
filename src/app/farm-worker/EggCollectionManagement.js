@@ -127,7 +127,7 @@ export default function EggCollectionManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Egg Collection Management</h1>
         <button

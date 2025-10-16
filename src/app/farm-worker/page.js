@@ -7,6 +7,7 @@ import BreedsManagement from './BreedsManagement';
 import IncubatorsManagement from './IncubatorsManagement';
 import BatchesManagement from './BatchesManagement';
 import EggCollectionManagement from './EggCollectionManagement';
+import MortalityManagement from './MortalityManagement';
 
 export default function FarmWorkerDashboard() {
   const [user, setUser] = useState(null);
@@ -82,14 +83,6 @@ export default function FarmWorkerDashboard() {
   );
 
   // Placeholder components for other sections
-  const MortalityManagement = () => (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Mortality Tracking</h1>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600">Mortality tracking coming soon...</p>
-      </div>
-    </div>
-  );
 
   if (!user) {
     return <div>Loading...</div>;
