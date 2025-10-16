@@ -1,0 +1,329 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+export default function SalesManagement() {
+  const [sales, setSales] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({
+    customer_id: '',
+    order_id: '',
+    sale_date: new Date().toISOString().split('T')[0],
+    total_price: '',
+    payment_method: 'pending',
+    notes: ''
+  });
+
+  useEffect(() => {
+    fetchSales();
+    fetchCustomers();
+    fetchOrders();
+  }, []);
+
+  const fetchSales = async () => {
+    try {
+      const response = await fetch('/api/sales');
+      if (response.ok) {
+        const data = await response.json();
+        setSales(data);
+      }
+    } catch (error) {
+      console.error('Error fetching sales:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers');
+      if (response.ok) {
+        const data = await response.json();
+        setCustomers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('/api/orders');
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Get current user session to get sold_by id
+      const sessionResponse = await fetch('/api/auth/session');
+      if (!sessionResponse.ok) {
+        alert('Unable to get user session');
+        return;
+      }
+      const userData = await sessionResponse.json();
+
+      const response = await fetch('/api/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          sold_by: userData.id
+        }),
+      });
+
+      if (response.ok) {
+        fetchSales();
+        setShowAddForm(false);
+        setFormData({
+          customer_id: '',
+          order_id: '',
+          sale_date: new Date().toISOString().split('T')[0],
+          total_price: '',
+          payment_method: 'pending',
+          notes: ''
+        });
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message);
+      }
+    } catch (error) {
+      console.error('Error saving sale:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setShowAddForm(false);
+    setFormData({
+      customer_id: '',
+      order_id: '',
+      sale_date: new Date().toISOString().split('T')[0],
+      amount: '',
+      payment_method: 'cash',
+      notes: ''
+    });
+  };
+
+  const getPaymentMethodColor = (method) => {
+    switch (method?.toLowerCase()) {
+      case 'cash': return 'bg-green-100 text-green-800';
+      case 'card': return 'bg-blue-100 text-blue-800';
+      case 'bank_transfer': return 'bg-purple-100 text-purple-800';
+      case 'check': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const totalSales = sales.reduce((sum, sale) => sum + parseFloat(sale.total_price || 0), 0);
+  const todaysSales = sales
+    .filter(sale => sale.sale_date === new Date().toISOString().split('T')[0])
+    .reduce((sum, sale) => sum + parseFloat(sale.total_price || 0), 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Sales Management</h1>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Record Sale
+        </button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900">Total Sales</h3>
+          <p className="text-3xl font-bold text-green-600 mt-2">${totalSales.toFixed(2)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900">Today's Sales</h3>
+          <p className="text-3xl font-bold text-blue-600 mt-2">${todaysSales.toFixed(2)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900">Total Transactions</h3>
+          <p className="text-3xl font-bold text-purple-600 mt-2">{sales.length}</p>
+        </div>
+      </div>
+
+      {showAddForm && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Record New Sale</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Customer</label>
+                <select
+                  required
+                  value={formData.customer_id}
+                  onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                >
+                  <option value="">Select Customer</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} - {customer.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Order (Optional)</label>
+                <select
+                  value={formData.order_id}
+                  onChange={(e) => setFormData({ ...formData, order_id: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                >
+                  <option value="">Select Order</option>
+                  {orders.map((order) => (
+                    <option key={order.id} value={order.id}>
+                      Order #{order.id} - {order.customer_name} - ${order.total_amount}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Sale Date</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.sale_date}
+                  onChange={(e) => setFormData({ ...formData, sale_date: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Total Price</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={formData.total_price}
+                  onChange={(e) => setFormData({ ...formData, total_price: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                <select
+                  required
+                  value={formData.payment_method}
+                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="check">Check</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  rows="3"
+                  placeholder="Sale notes"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Record Sale
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-medium text-gray-900">Sales Records</h2>
+        </div>
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="p-6 text-center">Loading sales...</div>
+          ) : sales.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">No sales records found</div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Sale ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Price
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment Method
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Notes
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sales.map((sale) => (
+                  <tr key={sale.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      #{sale.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {sale.customer_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(sale.sale_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      ${parseFloat(sale.total_price).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(sale.payment_method)}`}>
+                        {sale.payment_method?.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      {sale.notes || '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
