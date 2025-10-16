@@ -92,24 +92,38 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500">✕</button>
           </div>
           <nav className="p-4 mt-2">
-            {currentNav.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                  pathname === item.href
-                    ? 'bg-blue-100 text-blue-700'
-                    : item.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                onClick={(e) => handleNavClick(item, e)}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
-                {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
-              </Link>
-            ))}
+            {currentNav.map((item) => {
+              const isActive = role === 'sales_person' ? currentPage === item.name.toLowerCase().replace(' ', '') : pathname === item.href;
+              return (
+                <div
+                  key={item.name}
+                  className={`block px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-100 text-blue-700'
+                      : item.comingSoon
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  onClick={(e) => {
+                    if (item.comingSoon) {
+                      e.preventDefault();
+                      alert('Coming Soon!');
+                      return;
+                    }
+                    if (role === 'sales_person' && onPageChange) {
+                      onPageChange(item.name.toLowerCase().replace(' ', ''));
+                    } else {
+                      // For other roles, use Link behavior
+                      window.location.href = item.href;
+                    }
+                  }}
+                >
+                  <span className="mr-2">{item.icon}</span>
+                  {item.name}
+                  {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
+                </div>
+              );
+            })}
             <div className="mt-4 border-t pt-4">
               <button
                 onClick={async () => {
@@ -130,24 +144,38 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
       <aside className="hidden lg:block lg:fixed lg:top-16 lg:left-0 lg:w-64 lg:bottom-0">
         <div className="flex flex-col h-full bg-white shadow-lg">
           <nav className="flex-1 p-4 overflow-auto">
-            {currentNav.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`block px-3 py-2 rounded-md text-sm font-medium mb-1 ${
-                  pathname === item.href
-                    ? 'bg-blue-100 text-blue-700'
-                    : item.comingSoon
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                onClick={(e) => handleNavClick(item, e)}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
-                {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
-              </Link>
-            ))}
+            {currentNav.map((item) => {
+              const isActive = role === 'sales_person' ? currentPage === item.name.toLowerCase().replace(' ', '') : pathname === item.href;
+              return (
+                <div
+                  key={item.name}
+                  className={`block px-3 py-2 rounded-md text-sm font-medium mb-1 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-100 text-blue-700'
+                      : item.comingSoon
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  onClick={(e) => {
+                    if (item.comingSoon) {
+                      e.preventDefault();
+                      alert('Coming Soon!');
+                      return;
+                    }
+                    if (role === 'sales_person' && onPageChange) {
+                      onPageChange(item.name.toLowerCase().replace(' ', ''));
+                    } else {
+                      // For other roles, use Link behavior
+                      window.location.href = item.href;
+                    }
+                  }}
+                >
+                  <span className="mr-2">{item.icon}</span>
+                  {item.name}
+                  {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
+                </div>
+              );
+            })}
           </nav>
           <div className="p-4 border-t">
             <button

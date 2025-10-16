@@ -151,7 +151,7 @@ export default function SalesPersonDashboard() {
                 onClick={() => setCurrentPage('sales')}
               >
                 <h3 className="text-lg font-medium text-gray-900">Today's Sales</h3>
-                <p className="text-3xl font-bold text-green-600 mt-2">${dashboardData.todaysSales.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-600 mt-2">MWK {dashboardData.todaysSales.toFixed(2)}</p>
               </div>
 
               <div
@@ -159,7 +159,7 @@ export default function SalesPersonDashboard() {
                 onClick={() => setCurrentPage('sales')}
               >
                 <h3 className="text-lg font-medium text-gray-900">Monthly Revenue</h3>
-                <p className="text-3xl font-bold text-purple-600 mt-2">${dashboardData.monthlyRevenue.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-purple-600 mt-2">MWK {dashboardData.monthlyRevenue.toFixed(2)}</p>
               </div>
             </div>
 
