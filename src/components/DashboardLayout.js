@@ -17,7 +17,7 @@ export default function DashboardLayout({ children, role, user }) {
       { name: 'Incubators', href: '/farm-worker/incubators', icon: '🥚' },
       { name: 'Batches', href: '/farm-worker/batches', icon: '📦' },
       { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🧺' },
-      { name: 'Egg Incubation', href: '/farm-worker/egg-Incubation', icon: '🌡️', comingSoon: true },
+      { name: 'Egg Incubation', href: '/farm-worker/egg-incubation', icon: '🌡️' },
       { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀', comingSoon: true },
     ],
     sales_person: [
@@ -44,7 +44,7 @@ export default function DashboardLayout({ children, role, user }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 overflow-hidden">
       {/* Top header (fixed) - reusable */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-white border-b h-16 flex items-center px-4">
         <div className="flex items-center space-x-3">
