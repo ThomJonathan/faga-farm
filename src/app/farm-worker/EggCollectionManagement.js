@@ -52,8 +52,8 @@ export default function EggCollectionManagement() {
       const response = await fetch('/api/batches');
       if (response.ok) {
         const data = await response.json();
-        // Only show active batches
-        setBatches(data.filter(batch => batch.status === 'active'));
+        // Only show active batches with adults
+        setBatches(data.filter(batch => batch.status === 'active' && batch.level === 'adult'));
       }
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -136,57 +136,6 @@ export default function EggCollectionManagement() {
         >
           Record Collection
         </button>
-      </div>
-
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Total Eggs Collected</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{summary.total_quantity}</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Collection Records</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">{summary.total_records}</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">For Incubation</h3>
-            <p className="text-3xl font-bold text-purple-600 mt-2">
-              {summary.by_egg_type.incubation || 0}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Filter Collections</h2>
-        <div className="flex space-x-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Filter Type</label>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-            >
-              <option value="all">All Time</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
-            </select>
-          </div>
-          {filter !== 'all' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-              />
-            </div>
-          )}
-        </div>
       </div>
 
       {showAddForm && (
@@ -273,6 +222,57 @@ export default function EggCollectionManagement() {
           </form>
         </div>
       )}
+
+      {/* Summary Cards */}
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900">Total Eggs Collected</h3>
+            <p className="text-3xl font-bold text-blue-600 mt-2">{summary.total_quantity}</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900">Collection Records</h3>
+            <p className="text-3xl font-bold text-green-600 mt-2">{summary.total_records}</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900">For Incubation</h3>
+            <p className="text-3xl font-bold text-purple-600 mt-2">
+              {summary.by_egg_type.incubation || 0}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Filter Collections</h2>
+        <div className="flex space-x-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Filter Type</label>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+            >
+              <option value="all">All Time</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+            </select>
+          </div>
+          {filter !== 'all' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Date</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+              />
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
