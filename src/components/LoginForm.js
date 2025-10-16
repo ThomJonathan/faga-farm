@@ -50,13 +50,13 @@ export default function LoginForm() {
         switch (data.user?.role) {
           case 'admin':
           case 'manager':
-            router.push('/manager/dashboard');
+            router.push('/manager');
             break;
           case 'sales_person':
-            router.push('/sales-person/dashboard');
+            router.push('/sales-person');
             break;
           case 'farm_worker':
-            router.push('/farm-worker/dashboard');
+            router.push('/farm-worker');
             break;
           default:
             router.push('/');

@@ -1,11 +1,12 @@
 import DashboardLayout from '../../components/DashboardLayout';
 import auth from '../../lib/auth';
+import { redirect } from 'next/navigation';
 
 export default async function FarmWorkerDashboard() {
   const user = await auth.getUserSession();
   if (!user) {
     // Redirect to login if no session
-    return { redirect: '/login' };
+    redirect('/login');
   }
   return (
     <DashboardLayout role="farm_worker" user={user}>
