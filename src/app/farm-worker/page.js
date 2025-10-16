@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import HousesManagement from './HousesManagement';
+import BreedsManagement from './BreedsManagement';
+import IncubatorsManagement from './IncubatorsManagement';
 
 export default function FarmWorkerDashboard() {
   const [user, setUser] = useState(null);
@@ -29,6 +31,8 @@ export default function FarmWorkerDashboard() {
         return <HousesManagement />;
       case 'breeds':
         return <BreedsManagement />;
+      case 'incubators':
+        return <IncubatorsManagement />;
       case 'batches':
         return <BatchesManagement />;
       case 'egg-collection':

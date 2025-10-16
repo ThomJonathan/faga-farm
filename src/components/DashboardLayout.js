@@ -11,12 +11,14 @@ export default function DashboardLayout({ children, role, user }) {
 
   const navigation = {
     farm_worker: [
-      { name: 'Dashboard', href: '/farm-worker', icon: '🏠' },
+      { name: 'Dashboard', href: '/farm-worker', icon: '📊' },
       { name: 'Houses', href: '/farm-worker/houses', icon: '🏠' },
       { name: 'Breeds', href: '/farm-worker/breeds', icon: '🐔'},
-      { name: 'Batches', href: '/farm-worker/batches', icon: '🐔', comingSoon: true },
-      { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🥚', comingSoon: true },
-      { name: 'Mortality', href: '/farm-worker/mortality', icon: '⚠️', comingSoon: true },
+      { name: 'Incubators', href: '/farm-worker/incubators', icon: '🥚' },
+      { name: 'Batches', href: '/farm-worker/batches', icon: '📦', comingSoon: true },
+      { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🧺', comingSoon: true },
+      { name: 'Egg Incubation', href: '/farm-worker/egg-Incubation', icon: '🌡️', comingSoon: true },
+      { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀', comingSoon: true },
     ],
     sales_person: [
       { name: 'Dashboard', href: '/sales-person', icon: '🏠' },
