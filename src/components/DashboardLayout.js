@@ -12,9 +12,11 @@ export default function DashboardLayout({ children, role, user }) {
   const navigation = {
     farm_worker: [
       { name: 'Dashboard', href: '/farm-worker', icon: '🏠' },
-      { name: 'Batches', href: '/farm-worker/batches', icon: '🐔' },
-      { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🥚' },
-      { name: 'Mortality', href: '/farm-worker/mortality', icon: '⚠️' },
+      { name: 'Houses', href: '/farm-worker/houses', icon: '🏠' },
+      { name: 'Breeds', href: '/farm-worker/breeds', icon: '🐔'},
+      { name: 'Batches', href: '/farm-worker/batches', icon: '🐔', comingSoon: true },
+      { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🥚', comingSoon: true },
+      { name: 'Mortality', href: '/farm-worker/mortality', icon: '⚠️', comingSoon: true },
     ],
     sales_person: [
       { name: 'Dashboard', href: '/sales-person', icon: '🏠' },
@@ -30,6 +32,14 @@ export default function DashboardLayout({ children, role, user }) {
   };
 
   const currentNav = navigation[role] || [];
+
+  const handleNavClick = (item, e) => {
+    if (item.comingSoon) {
+      e.preventDefault();
+      alert('Coming Soon!');
+      return;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,10 +87,6 @@ export default function DashboardLayout({ children, role, user }) {
         {/* sidebar panel */}
         <div className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
           <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center">
-              <img src="/fagaFarm.png" alt="Faga Farm Logo" className="h-8 w-8 mr-2" />
-              <h2 className="text-lg font-semibold">Faga Production Inventory Management System</h2>
-            </div>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500">✕</button>
           </div>
           <nav className="p-4 mt-2">
@@ -91,12 +97,15 @@ export default function DashboardLayout({ children, role, user }) {
                 className={`block px-3 py-2 rounded-md text-sm font-medium ${
                   pathname === item.href
                     ? 'bg-blue-100 text-blue-700'
+                    : item.comingSoon
+                    ? 'text-gray-400 cursor-not-allowed'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
-                onClick={() => setSidebarOpen(false)}
+                onClick={(e) => handleNavClick(item, e)}
               >
                 <span className="mr-2">{item.icon}</span>
                 {item.name}
+                {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
               </Link>
             ))}
             <div className="mt-4 border-t pt-4">
@@ -126,11 +135,15 @@ export default function DashboardLayout({ children, role, user }) {
                 className={`block px-3 py-2 rounded-md text-sm font-medium mb-1 ${
                   pathname === item.href
                     ? 'bg-blue-100 text-blue-700'
+                    : item.comingSoon
+                    ? 'text-gray-400 cursor-not-allowed'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
+                onClick={(e) => handleNavClick(item, e)}
               >
                 <span className="mr-2">{item.icon}</span>
                 {item.name}
+                {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
               </Link>
             ))}
           </nav>
@@ -149,8 +162,8 @@ export default function DashboardLayout({ children, role, user }) {
       </aside>
 
       {/* Main content - push down by header height and pad for sidebar on lg */}
-      <div className="mt-16 lg:pl-64">
-        <main className="p-4">
+      <div className="mt-16 lg:pl-64 h-[calc(100vh-4rem)] overflow-hidden">
+        <main className="p-4 h-full overflow-auto">
           {children}
         </main>
       </div>
