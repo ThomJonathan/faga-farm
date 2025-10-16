@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import HousesManagement from './HousesManagement';
 import BreedsManagement from './BreedsManagement';
 import IncubatorsManagement from './IncubatorsManagement';
+import BatchesManagement from './BatchesManagement';
 
 export default function FarmWorkerDashboard() {
   const [user, setUser] = useState(null);
@@ -80,15 +81,6 @@ export default function FarmWorkerDashboard() {
   );
 
   // Placeholder components for other sections
-  const BreedsManagement = () => (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Breeds Management</h1>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600">Breeds management coming soon...</p>
-      </div>
-    </div>
-  );
-
   const BatchesManagement = () => (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Batches Management</h1>

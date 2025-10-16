@@ -15,7 +15,7 @@ export default function DashboardLayout({ children, role, user }) {
       { name: 'Houses', href: '/farm-worker/houses', icon: '🏠' },
       { name: 'Breeds', href: '/farm-worker/breeds', icon: '🐔'},
       { name: 'Incubators', href: '/farm-worker/incubators', icon: '🥚' },
-      { name: 'Batches', href: '/farm-worker/batches', icon: '📦', comingSoon: true },
+      { name: 'Batches', href: '/farm-worker/batches', icon: '📦' },
       { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🧺', comingSoon: true },
       { name: 'Egg Incubation', href: '/farm-worker/egg-Incubation', icon: '🌡️', comingSoon: true },
       { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀', comingSoon: true },
