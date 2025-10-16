@@ -6,6 +6,7 @@ import HousesManagement from './HousesManagement';
 import BreedsManagement from './BreedsManagement';
 import IncubatorsManagement from './IncubatorsManagement';
 import BatchesManagement from './BatchesManagement';
+import EggCollectionManagement from './EggCollectionManagement';
 
 export default function FarmWorkerDashboard() {
   const [user, setUser] = useState(null);
@@ -81,24 +82,6 @@ export default function FarmWorkerDashboard() {
   );
 
   // Placeholder components for other sections
-  const BatchesManagement = () => (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Batches Management</h1>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600">Batches management coming soon...</p>
-      </div>
-    </div>
-  );
-
-  const EggCollectionManagement = () => (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Egg Collection</h1>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600">Egg collection management coming soon...</p>
-      </div>
-    </div>
-  );
-
   const MortalityManagement = () => (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Mortality Tracking</h1>

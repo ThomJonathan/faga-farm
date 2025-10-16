@@ -1,12 +1,18 @@
-# TODO: Implement User Session Tracking, Display Real Name, and Logout Functionality
+# Egg Collection Implementation TODO
 
-## Steps to Complete
+## Completed Tasks
+- [x] Create egg_collection database table (already exists)
+- [x] Create API endpoints (/api/egg-collection) with GET, POST operations
+- [x] Create EggCollectionManagement component with daily recording form and summary views
+- [x] Update navigation to enable egg collection (remove comingSoon)
+- [x] Update dashboard to include egg collection in renderContent
+- [x] Create egg-collection route page (/farm-worker/egg-collection/page.js)
 
-- [x] Add session utilities in `src/lib/auth.js` for setting/getting/clearing user cookies
-- [x] Update `src/app/api/auth/login/route.js` to set a secure cookie with user data on successful login
-- [x] Create `src/app/api/auth/logout/route.js` to clear the session cookie
-- [x] Update `src/components/DashboardLayout.js` to make logout an API call instead of link (desktop and mobile)
-- [x] Update dashboard pages (`farm-worker/page.js`, `sales-person/page.js`, `manager/page.js`) to retrieve user from cookie and pass to DashboardLayout
-- [x] Create `middleware.js` to protect dashboard routes by checking for valid session
-- [x] Test login flow, name display on dashboards, and logout functionality
-- [x] Ensure dashboards redirect to login if no session
+## Pending Tasks
+- [ ] Test API endpoints functionality
+- [ ] Test component recording and summary features
+- [ ] Update dashboard statistics display to show actual egg collection data
+- [ ] Implement filtering and summary calculations (week/month/year)
+- [ ] Ensure no edit/delete after recording (read-only)
+- [ ] Add validation for duplicate collections on same date/batch
+- [ ] Add proper error handling and user feedback
