@@ -235,10 +235,21 @@ export default function EggCollectionManagement() {
             <p className="text-3xl font-bold text-green-600 mt-2">{summary.total_records}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">For Incubation</h3>
-            <p className="text-3xl font-bold text-purple-600 mt-2">
-              {summary.by_egg_type.incubation || 0}
-            </p>
+            <h3 className="text-lg font-medium text-gray-900">Egg Usage</h3>
+            <div className="flex space-x-4 mt-4">
+              <div className="flex-1">
+                <h4 className="text-md font-medium text-gray-700">For Sale</h4>
+                <p className="text-3xl font-bold text-green-600 mt-2">
+                  {summary.by_egg_type.sales || 0}
+                </p>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-md font-medium text-gray-700">For Incubation</h4>
+                <p className="text-3xl font-bold text-purple-600 mt-2">
+                  {summary.by_egg_type.incubation || 0}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
