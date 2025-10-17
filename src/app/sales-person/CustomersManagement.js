@@ -8,12 +8,10 @@ export default function CustomersManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    location: '',
     phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip_code: ''
+    email: '',
+    customer_type: 'retail'
   });
 
   useEffect(() => {
@@ -50,12 +48,10 @@ export default function CustomersManagement() {
         setShowAddForm(false);
         setFormData({
           name: '',
-          email: '',
+          location: '',
           phone: '',
-          address: '',
-          city: '',
-          state: '',
-          zip_code: ''
+          email: '',
+          customer_type: 'retail'
         });
       } else {
         const errorData = await response.json();
@@ -70,12 +66,10 @@ export default function CustomersManagement() {
     setShowAddForm(false);
     setFormData({
       name: '',
-      email: '',
+      location: '',
       phone: '',
-      address: '',
-      city: '',
-      state: '',
-      zip_code: ''
+      email: '',
+      customer_type: 'retail'
     });
   };
 
@@ -108,14 +102,13 @@ export default function CustomersManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700">Location</label>
                 <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="customer@example.com"
+                  placeholder="Customer location"
                 />
               </div>
               <div>
@@ -125,48 +118,30 @@ export default function CustomersManagement() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="+265 999 123 456"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Address</label>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
                 <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="Street address"
+                  placeholder="customer@example.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">City</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                <label className="block text-sm font-medium text-gray-700">Customer Type</label>
+                <select
+                  value={formData.customer_type}
+                  onChange={(e) => setFormData({ ...formData, customer_type: e.target.value })}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="City"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">State</label>
-                <input
-                  type="text"
-                  value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="State"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
-                <input
-                  type="text"
-                  value={formData.zip_code}
-                  onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="12345"
-                />
+                >
+                  <option value="retail">Retail</option>
+                  <option value="wholesale">Wholesale</option>
+                  <option value="contract">Contract</option>
+                </select>
               </div>
             </div>
             <div className="flex space-x-3">
@@ -205,19 +180,16 @@ export default function CustomersManagement() {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                    Location
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Phone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Address
+                    Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    City
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    State
+                    Type
                   </th>
                 </tr>
               </thead>
@@ -228,19 +200,16 @@ export default function CustomersManagement() {
                       {customer.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {customer.email}
+                      {customer.location || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {customer.phone || '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {customer.address || '-'}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {customer.city || '-'}
+                      {customer.email || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {customer.state || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                      {customer.customer_type || 'retail'}
                     </td>
                   </tr>
                 ))}

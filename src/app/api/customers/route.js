@@ -13,31 +13,29 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { name, email, phone, address, city, state, zip_code } = await request.json();
+    const { name, location, phone, email, customer_type } = await request.json();
 
-    if (!name || !email) {
-      return NextResponse.json({ message: 'Name and email are required' }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ message: 'Name is required' }, { status: 400 });
     }
 
     const [result] = await db.query(
-      'INSERT INTO customers (name, email, phone, address, city, state, zip_code) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, phone || null, address || null, city || null, state || null, zip_code || null]
+      'INSERT INTO customers (name, location, phone, email, customer_type) VALUES (?, ?, ?, ?, ?)',
+      [name, location || null, phone || null, email || null, customer_type || 'retail']
     );
 
     return NextResponse.json({
       id: result.insertId,
       name,
-      email,
+      location,
       phone,
-      address,
-      city,
-      state,
-      zip_code
+      email,
+      customer_type
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating customer:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      return NextResponse.json({ message: 'Customer with this email already exists' }, { status: 409 });
+      return NextResponse.json({ message: 'Customer with this name already exists' }, { status: 409 });
     }
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
