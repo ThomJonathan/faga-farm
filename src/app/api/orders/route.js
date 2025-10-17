@@ -23,7 +23,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { customer_id, order_date, total_amount, status, notes, sales_person_id } = await request.json();
+    const { customer_id, order_date, total_amount, status, notes, sales_person_id, items } = await request.json();
 
     if (!customer_id || !order_date || !total_amount || !sales_person_id) {
       return NextResponse.json({ message: 'Customer, order date, total amount, and sales person are required' }, { status: 400 });
@@ -41,19 +41,77 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Sales person not found' }, { status: 404 });
     }
 
-    const [result] = await db.query(
-      'INSERT INTO customer_orders (customer_id, order_date, total_amount, status, sales_person_id, notes) VALUES (?, ?, ?, ?, ?, ?)',
-      [customer_id, order_date, total_amount, status || 'pending', sales_person_id, notes || null]
-    );
+    // Validate order items if provided
+    if (items && items.length > 0) {
+      for (const item of items) {
+        if (!item.product_id || !item.quantity || item.unit_price === undefined) {
+          return NextResponse.json({ message: 'Each order item must have product_id, quantity, and unit_price' }, { status: 400 });
+        }
 
-    return NextResponse.json({
-      id: result.insertId,
-      customer_id,
-      order_date,
-      total_amount,
-      status: status || 'pending',
-      notes
-    }, { status: 201 });
+        // Verify product exists
+        const [productCheck] = await db.query('SELECT id FROM products WHERE id = ?', [item.product_id]);
+        if (productCheck.length === 0) {
+          return NextResponse.json({ message: `Product with ID ${item.product_id} not found` }, { status: 404 });
+        }
+
+        // Verify batch exists if provided
+        if (item.batch_id) {
+          const [batchCheck] = await db.query('SELECT id FROM batches WHERE id = ?', [item.batch_id]);
+          if (batchCheck.length === 0) {
+            return NextResponse.json({ message: `Batch with ID ${item.batch_id} not found` }, { status: 404 });
+          }
+        }
+      }
+    }
+
+    // Start transaction
+    await db.query('START TRANSACTION');
+
+    try {
+      // Create the order
+      const [result] = await db.query(
+        'INSERT INTO customer_orders (customer_id, order_date, total_amount, status, sales_person_id, notes) VALUES (?, ?, ?, ?, ?, ?)',
+        [customer_id, order_date, total_amount, status || 'pending', sales_person_id, notes || null]
+      );
+
+      const orderId = result.insertId;
+
+      // Create order items if provided
+      if (items && items.length > 0) {
+        const orderItemsValues = items.map(item => [
+          orderId,
+          item.product_id,
+          item.quantity,
+          item.unit_price,
+          item.total_price || (item.quantity * item.unit_price),
+          item.batch_id || null
+        ]);
+
+        await db.query(
+          'INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price, batch_id) VALUES ?',
+          [orderItemsValues]
+        );
+      }
+
+      // Commit transaction
+      await db.query('COMMIT');
+
+      return NextResponse.json({
+        id: orderId,
+        customer_id,
+        order_date,
+        total_amount,
+        status: status || 'pending',
+        notes,
+        items: items || []
+      }, { status: 201 });
+
+    } catch (error) {
+      // Rollback transaction on error
+      await db.query('ROLLBACK');
+      throw error;
+    }
+
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

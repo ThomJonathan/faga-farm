@@ -5,19 +5,30 @@ import { useState, useEffect } from 'react';
 export default function OrdersManagement() {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [orderItems, setOrderItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showOrderItems, setShowOrderItems] = useState(null);
   const [formData, setFormData] = useState({
     customer_id: '',
     order_date: new Date().toISOString().split('T')[0],
-    total_amount: '',
+    total_amount: '0',
     status: 'pending',
-    notes: ''
+    notes: '',
+    items: [],
+    currentItem: {
+      product_id: '',
+      quantity: '',
+      batch_id: ''
+    }
   });
 
   useEffect(() => {
     fetchOrders();
     fetchCustomers();
+    fetchProducts();
+    fetchOrderItems();
   }, []);
 
   const fetchOrders = async () => {
@@ -46,10 +57,87 @@ export default function OrdersManagement() {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchOrderItems = async () => {
+    try {
+      const response = await fetch('/api/order-items');
+      if (response.ok) {
+        const data = await response.json();
+        setOrderItems(data);
+      }
+    } catch (error) {
+      console.error('Error fetching order items:', error);
+    }
+  };
+
+  const addOrderItem = () => {
+    const selectedProduct = products.find(p => p.id === parseInt(formData.currentItem.product_id));
+    if (!selectedProduct || !formData.currentItem.quantity) {
+      alert('Please select a product and enter quantity');
+      return;
+    }
+
+    const quantity = parseInt(formData.currentItem.quantity);
+    if (quantity <= 0) {
+      alert('Quantity must be greater than 0');
+      return;
+    }
+
+    const newItem = {
+      product_id: parseInt(formData.currentItem.product_id),
+      product_name: selectedProduct.product_name,
+      quantity: quantity,
+      unit_price: parseFloat(selectedProduct.current_price || 0),
+      total_price: parseFloat(selectedProduct.current_price || 0) * quantity,
+      batch_id: formData.currentItem.batch_id || null
+    };
+
+    const updatedItems = [...formData.items, newItem];
+    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.total_price, 0);
+
+    setFormData({
+      ...formData,
+      items: updatedItems,
+      total_amount: newTotalAmount.toFixed(2),
+      currentItem: {
+        product_id: '',
+        quantity: '',
+        batch_id: ''
+      }
+    });
+  };
+
+  const removeOrderItem = (index) => {
+    const updatedItems = formData.items.filter((_, i) => i !== index);
+    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.total_price, 0);
+    
+    setFormData({
+      ...formData,
+      items: updatedItems,
+      total_amount: newTotalAmount.toFixed(2)
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.items.length === 0) {
+      alert('Please add at least one item to the order');
+      return;
+    }
+
     try {
-      // Get current user session to get sales_person_id
       const sessionResponse = await fetch('/api/auth/session');
       if (!sessionResponse.ok) {
         alert('Unable to get user session');
@@ -57,33 +145,49 @@ export default function OrdersManagement() {
       }
       const userData = await sessionResponse.json();
 
-      const response = await fetch('/api/orders', {
+      // First create the order
+      const orderResponse = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
-          sales_person_id: userData.id
+          customer_id: parseInt(formData.customer_id),
+          order_date: formData.order_date,
+          total_amount: parseFloat(formData.total_amount),
+          status: formData.status,
+          notes: formData.notes,
+          sales_person_id: userData.id,
+          items: formData.items // Send items along with the order
         }),
       });
 
-      if (response.ok) {
-        fetchOrders();
-        setShowAddForm(false);
-        setFormData({
-          customer_id: '',
-          order_date: new Date().toISOString().split('T')[0],
-          total_amount: '',
-          status: 'pending',
-          notes: ''
-        });
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message);
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        alert(errorData.message || 'Error creating order');
+        return;
       }
+
+      // Refresh data and reset form
+      await fetchOrders();
+      await fetchOrderItems();
+      setShowAddForm(false);
+      setFormData({
+        customer_id: '',
+        order_date: new Date().toISOString().split('T')[0],
+        total_amount: '0',
+        status: 'pending',
+        notes: '',
+        items: [],
+        currentItem: {
+          product_id: '',
+          quantity: '',
+          batch_id: ''
+        }
+      });
     } catch (error) {
       console.error('Error saving order:', error);
+      alert('Error saving order');
     }
   };
 
@@ -92,9 +196,15 @@ export default function OrdersManagement() {
     setFormData({
       customer_id: '',
       order_date: new Date().toISOString().split('T')[0],
-      total_amount: '',
+      total_amount: '0',
       status: 'pending',
-      notes: ''
+      notes: '',
+      items: [],
+      currentItem: {
+        product_id: '',
+        quantity: '',
+        batch_id: ''
+      }
     });
   };
 
@@ -137,7 +247,7 @@ export default function OrdersManagement() {
                   <option value="">Select Customer</option>
                   {customers.map((customer) => (
                     <option key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.email}
+                      {customer.name} - {customer.email || customer.phone}
                     </option>
                   ))}
                 </select>
@@ -152,19 +262,99 @@ export default function OrdersManagement() {
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Total Amount</label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={formData.total_amount}
-                  onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="0.00"
-                />
+            </div>
+
+            {/* Order Items Section */}
+            <div className="mt-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Order Items</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Product</label>
+                  <select
+                    value={formData.currentItem.product_id}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      currentItem: { ...formData.currentItem, product_id: e.target.value }
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  >
+                    <option value="">Select Product</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.product_name} - ${product.current_price}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Quantity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.currentItem.quantity}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      currentItem: { ...formData.currentItem, quantity: e.target.value }
+                    })}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={addOrderItem}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors w-full"
+                  >
+                    Add Item
+                  </button>
+                </div>
               </div>
+
+              {/* Order Items List */}
+              {formData.items.length > 0 && (
+                <div className="mt-4">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {formData.items.map((item, index) => (
+                        <tr key={index}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.product_name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.unit_price.toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.total_price.toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <button
+                              type="button"
+                              onClick={() => removeOrderItem(index)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-50">
+                        <td colSpan="3" className="px-6 py-4 text-right font-medium">Total Amount:</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          ${parseFloat(formData.total_amount).toFixed(2)}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Status</label>
                 <select
@@ -180,7 +370,7 @@ export default function OrdersManagement() {
                   <option value="delivered">Delivered</option>
                 </select>
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Notes</label>
                 <textarea
                   value={formData.notes}
@@ -191,6 +381,7 @@ export default function OrdersManagement() {
                 />
               </div>
             </div>
+
             <div className="flex space-x-3">
               <button
                 type="submit"
@@ -244,35 +435,102 @@ export default function OrdersManagement() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {orders.map((order) => (
-                  <tr key={order.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{order.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.customer_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.order_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                      ${parseFloat(order.total_amount).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {order.notes || '-'}
-                    </td>
-                  </tr>
-                ))}
+                {orders.map((order) => {
+                  const orderItemsForOrder = orderItems.filter(item => item.order_id === order.id);
+                  return (
+                    <tr key={order.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{order.id}
+                        {orderItemsForOrder.length > 0 && (
+                          <button
+                            onClick={() => setShowOrderItems(showOrderItems === order.id ? null : order.id)}
+                            className="ml-2 text-blue-600 hover:text-blue-800 text-xs"
+                          >
+                            ({orderItemsForOrder.length} items)
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.customer_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(order.order_date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                        ${parseFloat(order.total_amount).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                        {order.notes || '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
       </div>
+
+      {showOrderItems && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">Order Items for Order #{showOrderItems}</h2>
+          </div>
+          <div className="overflow-x-auto">
+            {orderItems.filter(item => item.order_id === showOrderItems).length === 0 ? (
+              <div className="p-6 text-center text-gray-500">No items found for this order</div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Product
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Unit Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Batch
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {orderItems.filter(item => item.order_id === showOrderItems).map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.product_name || `Product #${item.product_id}`}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {item.quantity}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${parseFloat(item.unit_price).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                        ${parseFloat(item.total_price).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {item.batch_number || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,10 +10,9 @@ export default function SalesManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
     customer_id: '',
-    order_id: '',
     sale_date: new Date().toISOString().split('T')[0],
     total_price: '',
-    payment_method: 'pending',
+    payment_status: 'pending',
     notes: ''
   });
 
@@ -88,10 +87,9 @@ export default function SalesManagement() {
         setShowAddForm(false);
         setFormData({
           customer_id: '',
-          order_id: '',
           sale_date: new Date().toISOString().split('T')[0],
           total_price: '',
-          payment_method: 'pending',
+          payment_status: 'pending',
           notes: ''
         });
       } else {
@@ -107,20 +105,18 @@ export default function SalesManagement() {
     setShowAddForm(false);
     setFormData({
       customer_id: '',
-      order_id: '',
       sale_date: new Date().toISOString().split('T')[0],
-      amount: '',
-      payment_method: 'cash',
+      total_price: '',
+      payment_status: 'pending',
       notes: ''
     });
   };
 
-  const getPaymentMethodColor = (method) => {
-    switch (method?.toLowerCase()) {
-      case 'cash': return 'bg-green-100 text-green-800';
-      case 'card': return 'bg-blue-100 text-blue-800';
-      case 'bank_transfer': return 'bg-purple-100 text-purple-800';
-      case 'check': return 'bg-yellow-100 text-yellow-800';
+  const getPaymentStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'partial': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -179,21 +175,7 @@ export default function SalesManagement() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Order (Optional)</label>
-                <select
-                  value={formData.order_id}
-                  onChange={(e) => setFormData({ ...formData, order_id: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                >
-                  <option value="">Select Order</option>
-                  {orders.map((order) => (
-                    <option key={order.id} value={order.id}>
-                      Order #{order.id} - {order.customer_name} - ${order.total_amount}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Sale Date</label>
                 <input
@@ -218,17 +200,16 @@ export default function SalesManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                <label className="block text-sm font-medium text-gray-700">Payment Status</label>
                 <select
                   required
-                  value={formData.payment_method}
-                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                  value={formData.payment_status}
+                  onChange={(e) => setFormData({ ...formData, payment_status: e.target.value })}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
                 >
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="check">Check</option>
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="partial">Partial</option>
                 </select>
               </div>
               <div className="md:col-span-2">
@@ -287,7 +268,7 @@ export default function SalesManagement() {
                     Total Price
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment Method
+                    Payment Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Notes
@@ -310,8 +291,8 @@ export default function SalesManagement() {
                       ${parseFloat(sale.total_price).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(sale.payment_method)}`}>
-                        {sale.payment_method?.replace('_', ' ')}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(sale.payment_status)}`}>
+                        {sale.payment_status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
