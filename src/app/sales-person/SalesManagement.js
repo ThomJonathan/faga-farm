@@ -232,22 +232,6 @@ export default function SalesManagement() {
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Total Sales</h3>
-          <p className="text-3xl font-bold text-green-600 mt-2">MWK {totalSales.toFixed(2)}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Today's Sales</h3>
-          <p className="text-3xl font-bold text-blue-600 mt-2">MWK {todaysSales.toFixed(2)}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Total Transactions</h3>
-          <p className="text-3xl font-bold text-purple-600 mt-2">{sales.length}</p>
-        </div>
-      </div>
-
       {showAddForm && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Record New Sale</h2>
@@ -415,6 +399,22 @@ export default function SalesManagement() {
           </form>
         </div>
       )}
+      
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900">Total Sales</h3>
+          <p className="text-3xl font-bold text-green-600 mt-2">MWK {totalSales.toFixed(2)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900">Today's Sales</h3>
+          <p className="text-3xl font-bold text-blue-600 mt-2">MWK {todaysSales.toFixed(2)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900">Total Transactions</h3>
+          <p className="text-3xl font-bold text-purple-600 mt-2">{sales.length}</p>
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
