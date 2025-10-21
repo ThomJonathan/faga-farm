@@ -94,10 +94,10 @@ export default function SalesPersonDashboard() {
         // Fetch available products from the new API
         const availableProductsRes = await fetch('/api/available-products').catch(() => ({ ok: false }));
         const availableProducts = availableProductsRes.ok ? await availableProductsRes.json() : {
-          eggs: { total: 0, by_breed: [] },
-          chicks: { total: 0, by_breed_and_age: [] },
-          meat: { total_kg: 0, total_birds: 0, by_breed: [] },
-          manure: { total_kg: 0 }
+          eggs: { total: 0, by_product: [] },
+          chicks: { total: 0, by_product: [] },
+          meat: { total_kg: 0, by_product: [] },
+          manure: { total_kg: 0, by_product: [] }
         };
 
         setDashboardData({
@@ -169,13 +169,13 @@ export default function SalesPersonDashboard() {
                       <p className="text-2xl font-extrabold text-yellow-600">{dashboardData.availableProducts.eggs.total}</p>
                     </div>
                   </div>
-                  {dashboardData.availableProducts.eggs.by_breed.length > 0 && (
+                  {dashboardData.availableProducts.eggs.by_product && dashboardData.availableProducts.eggs.by_product.length > 0 && (
                     <div className="space-y-1">
-                      {dashboardData.availableProducts.eggs.by_breed.map((breed, idx) => (
+                      {dashboardData.availableProducts.eggs.by_product.map((product, idx) => (
                         <div key={idx} className="bg-yellow-200 bg-opacity-50 rounded p-2 border border-yellow-300">
                           <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-800 text-xs">{breed.breed}</span>
-                            <span className="font-bold text-yellow-700 text-sm">{breed.quantity}</span>
+                            <span className="font-medium text-gray-800 text-xs">{product.breed}</span>
+                            <span className="font-bold text-yellow-700 text-sm">{product.quantity}</span>
                           </div>
                         </div>
                       ))}
@@ -193,16 +193,13 @@ export default function SalesPersonDashboard() {
                       <p className="text-2xl font-extrabold text-orange-600">{dashboardData.availableProducts.chicks.total}</p>
                     </div>
                   </div>
-                  {dashboardData.availableProducts.chicks.by_breed_and_age.length > 0 && (
+                  {dashboardData.availableProducts.chicks.by_product && dashboardData.availableProducts.chicks.by_product.length > 0 && (
                     <div className="space-y-1">
-                      {dashboardData.availableProducts.chicks.by_breed_and_age.map((item, idx) => (
+                      {dashboardData.availableProducts.chicks.by_product.map((product, idx) => (
                         <div key={idx} className="bg-orange-200 bg-opacity-50 rounded p-2 border border-orange-300">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-gray-800 text-xs">{item.breed}</span>
-                            <span className="font-bold text-orange-700 text-sm">{item.quantity}</span>
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {item.age_weeks === 0 ? `${item.age_days} days old` : `${item.age_weeks} weeks old`}
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-gray-800 text-xs">{product.breed}</span>
+                            <span className="font-bold text-orange-700 text-sm">{product.quantity}</span>
                           </div>
                         </div>
                       ))}
@@ -221,16 +218,13 @@ export default function SalesPersonDashboard() {
                       <p className="text-xs text-gray-600">{dashboardData.availableProducts.meat.total_birds} birds</p>
                     </div>
                   </div>
-                  {dashboardData.availableProducts.meat.by_breed.length > 0 && (
+                  {dashboardData.availableProducts.meat.by_product && dashboardData.availableProducts.meat.by_product.length > 0 && (
                     <div className="space-y-1">
-                      {dashboardData.availableProducts.meat.by_breed.map((breed, idx) => (
+                      {dashboardData.availableProducts.meat.by_product.map((product, idx) => (
                         <div key={idx} className="bg-red-200 bg-opacity-50 rounded p-2 border border-red-300">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-gray-800 text-xs">{breed.breed}</span>
-                            <span className="font-bold text-red-700 text-sm">{breed.kg.toFixed(1)}kg</span>
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {breed.birds} birds
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-gray-800 text-xs">{product.breed}</span>
+                            <span className="font-bold text-red-700 text-sm">{product.kg.toFixed(1)}kg</span>
                           </div>
                         </div>
                       ))}

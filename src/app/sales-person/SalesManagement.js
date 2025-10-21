@@ -62,7 +62,13 @@ export default function SalesManagement() {
       const response = await fetch('/api/products');
       if (response.ok) {
         const data = await response.json();
-        setProducts(data);
+        // Filter to only show products with available stock
+        const availableProducts = data.filter(product =>
+          product.available_quantity > 0 &&
+          product.is_active &&
+          product.current_price > 0
+        );
+        setProducts(availableProducts);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -95,6 +101,7 @@ export default function SalesManagement() {
     }
 
     const newItem = {
+      id: Date.now() + Math.random(), // unique id for React key
       product_id: parseInt(formData.currentItem.product_id),
       product_name: selectedProduct.product_name,
       quantity: quantity,
@@ -282,7 +289,7 @@ export default function SalesManagement() {
                     <option value="">Select Product</option>
                     {products.map((product) => (
                       <option key={product.id} value={product.id}>
-                        {product.product_name} - MWK {product.current_price}
+                        {product.product_name} - MWK {product.current_price} (Stock: {product.available_quantity})
                       </option>
                     ))}
                   </select>

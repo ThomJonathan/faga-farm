@@ -59,10 +59,82 @@ export default function OrdersManagement() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch('/api/available-products');
       if (response.ok) {
         const data = await response.json();
-        setProducts(data);
+
+        // Flatten the available products into a simple array for the form
+        const availableProducts = [];
+
+        // Add eggs with quantity > 0
+        if (data.eggs?.by_product) {
+          data.eggs.by_product.forEach(egg => {
+            if (egg.quantity > 0) {
+              availableProducts.push({
+                id: `egg-${egg.product_name.replace(/\s+/g, '-').toLowerCase()}`,
+                product_name: egg.product_name,
+                available_quantity: egg.quantity,
+                current_price: egg.unit_price,
+                product_type: 'eggs',
+                breed: egg.breed,
+                type: egg.type
+              });
+            }
+          });
+        }
+
+        // Add chicks with quantity > 0
+        if (data.chicks?.by_product) {
+          data.chicks.by_product.forEach(chick => {
+            if (chick.quantity > 0) {
+              availableProducts.push({
+                id: `chick-${chick.product_name.replace(/\s+/g, '-').toLowerCase()}`,
+                product_name: chick.product_name,
+                available_quantity: chick.quantity,
+                current_price: chick.unit_price,
+                product_type: 'day_old_chicks',
+                breed: chick.breed,
+                type: chick.type
+              });
+            }
+          });
+        }
+
+        // Add meat with kg > 0
+        if (data.meat?.by_product) {
+          data.meat.by_product.forEach(meat => {
+            if (meat.kg > 0) {
+              availableProducts.push({
+                id: `meat-${meat.product_name.replace(/\s+/g, '-').toLowerCase()}`,
+                product_name: meat.product_name,
+                available_quantity: meat.kg,
+                current_price: meat.unit_price,
+                product_type: 'meat',
+                breed: meat.breed,
+                type: meat.type,
+                unit: 'kg'
+              });
+            }
+          });
+        }
+
+        // Add manure with kg > 0
+        if (data.manure?.by_product) {
+          data.manure.by_product.forEach(manure => {
+            if (manure.kg > 0) {
+              availableProducts.push({
+                id: `manure-${manure.product_name.replace(/\s+/g, '-').toLowerCase()}`,
+                product_name: manure.product_name,
+                available_quantity: manure.kg,
+                current_price: manure.unit_price,
+                product_type: 'manure',
+                unit: 'kg'
+              });
+            }
+          });
+        }
+
+        setProducts(availableProducts);
       }
     } catch (error) {
       console.error('Error fetching products:', error);

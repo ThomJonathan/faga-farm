@@ -3,87 +3,106 @@ import pool from '../../../lib/db';
 
 export async function GET() {
   try {
-    // Eggs for sale: from egg_collections where egg_type = 'sales', grouped by breed
+    // Eggs for sale: from products table where product_type = 'eggs'
     const [eggsData] = await pool.execute(`
       SELECT
+        p.product_name,
+        p.available_quantity,
+        p.unit_price,
         br.name as breed_name,
-        br.type as breed_type,
-        SUM(ec.quantity) as total_quantity
-      FROM egg_collections ec
-      JOIN batches b ON ec.batch_id = b.id
-      JOIN breeds br ON b.breed_id = br.id
-      WHERE ec.egg_type = 'sales'
-      GROUP BY br.id, br.name, br.type
-      ORDER BY br.name
+        br.type as breed_type
+      FROM products p
+      LEFT JOIN breeds br ON p.breed_id = br.id
+      WHERE p.product_type = 'eggs' AND p.is_active = true
+      ORDER BY p.product_name
     `);
 
-    // Live chicks: from batches where level = 'chick' and status = 'active', grouped by breed and age
+    // Live chicks: from products table where product_type = 'chicks'
     const [chicksData] = await pool.execute(`
       SELECT
+        p.product_name,
+        p.available_quantity,
+        p.unit_price,
         br.name as breed_name,
-        br.type as breed_type,
-        b.level,
-        TIMESTAMPDIFF(WEEK, b.date_produced, CURDATE()) as age_weeks,
-        TIMESTAMPDIFF(DAY, b.date_produced, CURDATE()) as age_days,
-        SUM(b.current_quantity) as total_quantity
-      FROM batches b
-      JOIN breeds br ON b.breed_id = br.id
-      WHERE b.level = 'chick' AND b.status = 'active'
-      GROUP BY br.id, br.name, br.type, b.level, age_weeks, age_days
-      ORDER BY br.name, age_weeks
+        br.type as breed_type
+      FROM products p
+      LEFT JOIN breeds br ON p.breed_id = br.id
+      WHERE p.product_type = 'chicks' AND p.is_active = true
+      ORDER BY p.product_name
     `);
 
-    // Meat: from meat_production, grouped by breed
+    // Meat: from products table where product_type = 'meat'
     const [meatData] = await pool.execute(`
       SELECT
+        p.product_name,
+        p.available_quantity,
+        p.unit_price,
         br.name as breed_name,
-        br.type as breed_type,
-        SUM(mp.quantity_kg) as total_kg,
-        SUM(mp.number_of_birds) as total_birds
-      FROM meat_production mp
-      JOIN batches b ON mp.batch_id = b.id
-      JOIN breeds br ON b.breed_id = br.id
-      GROUP BY br.id, br.name, br.type
-      ORDER BY br.name
+        br.type as breed_type
+      FROM products p
+      LEFT JOIN breeds br ON p.breed_id = br.id
+      WHERE p.product_type = 'meat' AND p.is_active = true
+      ORDER BY p.product_name
     `);
 
-    // Manure: from manure_production
+    // Manure: from products table where product_type = 'manure'
     const [manureData] = await pool.execute(`
-      SELECT SUM(quantity_kg) as total_kg FROM manure_production
+      SELECT
+        p.product_name,
+        p.available_quantity,
+        p.unit_price
+      FROM products p
+      WHERE p.product_type = 'manure' AND p.is_active = true
+      ORDER BY p.product_name
     `);
 
-    // Structure the response
+    // Structure the response - only include products with quantity > 0
     const availableProducts = {
       eggs: {
-        total: eggsData.reduce((sum, item) => sum + parseInt(item.total_quantity || 0), 0),
-        by_breed: eggsData.map(item => ({
-          breed: item.breed_name,
-          type: item.breed_type,
-          quantity: parseInt(item.total_quantity || 0)
-        }))
+        total: eggsData.reduce((sum, item) => sum + parseInt(item.available_quantity || 0), 0),
+        by_product: eggsData
+          .filter(item => parseInt(item.available_quantity || 0) > 0)
+          .map(item => ({
+            product_name: item.product_name,
+            breed: item.breed_name,
+            type: item.breed_type,
+            quantity: parseInt(item.available_quantity || 0),
+            unit_price: parseFloat(item.unit_price || 0)
+          }))
       },
       chicks: {
-        total: chicksData.reduce((sum, item) => sum + parseInt(item.total_quantity || 0), 0),
-        by_breed_and_age: chicksData.map(item => ({
-          breed: item.breed_name,
-          type: item.breed_type,
-          age_weeks: item.age_weeks,
-          age_days: item.age_days,
-          quantity: parseInt(item.total_quantity || 0)
-        }))
+        total: chicksData.reduce((sum, item) => sum + parseInt(item.available_quantity || 0), 0),
+        by_product: chicksData
+          .filter(item => parseInt(item.available_quantity || 0) > 0)
+          .map(item => ({
+            product_name: item.product_name,
+            breed: item.breed_name,
+            type: item.breed_type,
+            quantity: parseInt(item.available_quantity || 0),
+            unit_price: parseFloat(item.unit_price || 0)
+          }))
       },
       meat: {
-        total_kg: meatData.reduce((sum, item) => sum + parseFloat(item.total_kg || 0), 0),
-        total_birds: meatData.reduce((sum, item) => sum + parseInt(item.total_birds || 0), 0),
-        by_breed: meatData.map(item => ({
-          breed: item.breed_name,
-          type: item.breed_type,
-          kg: parseFloat(item.total_kg || 0),
-          birds: parseInt(item.total_birds || 0)
-        }))
+        total_kg: meatData.reduce((sum, item) => sum + parseFloat(item.available_quantity || 0), 0),
+        by_product: meatData
+          .filter(item => parseFloat(item.available_quantity || 0) > 0)
+          .map(item => ({
+            product_name: item.product_name,
+            breed: item.breed_name,
+            type: item.breed_type,
+            kg: parseFloat(item.available_quantity || 0),
+            unit_price: parseFloat(item.unit_price || 0)
+          }))
       },
       manure: {
-        total_kg: parseFloat(manureData[0]?.total_kg || 0)
+        total_kg: manureData.reduce((sum, item) => sum + parseFloat(item.available_quantity || 0), 0),
+        by_product: manureData
+          .filter(item => parseFloat(item.available_quantity || 0) > 0)
+          .map(item => ({
+            product_name: item.product_name,
+            kg: parseFloat(item.available_quantity || 0),
+            unit_price: parseFloat(item.unit_price || 0)
+          }))
       }
     };
 

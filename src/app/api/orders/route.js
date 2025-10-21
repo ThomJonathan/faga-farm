@@ -48,10 +48,17 @@ export async function POST(request) {
           return NextResponse.json({ message: 'Each order item must have product_id, quantity, and unit_price' }, { status: 400 });
         }
 
-        // Verify product exists
-        const [productCheck] = await db.query('SELECT id FROM products WHERE id = ?', [item.product_id]);
+        // Verify product exists and check stock
+        const [productCheck] = await db.query('SELECT id, available_quantity, stock_threshold, alert_enabled FROM products WHERE id = ?', [item.product_id]);
         if (productCheck.length === 0) {
           return NextResponse.json({ message: `Product with ID ${item.product_id} not found` }, { status: 404 });
+        }
+
+        const currentQuantity = productCheck[0].available_quantity || 0;
+
+        // Check if sufficient stock
+        if (currentQuantity < item.quantity) {
+          return NextResponse.json({ message: `Insufficient stock for product ${item.product_id}. Available: ${currentQuantity}, Requested: ${item.quantity}` }, { status: 400 });
         }
 
         // Verify batch exists if provided
@@ -76,7 +83,7 @@ export async function POST(request) {
 
       const orderId = result.insertId;
 
-      // Create order items if provided
+      // Create order items if provided and update inventory
       if (items && items.length > 0) {
         const orderItemsValues = items.map(item => [
           orderId,
@@ -91,6 +98,44 @@ export async function POST(request) {
           'INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price, batch_id) VALUES ?',
           [orderItemsValues]
         );
+
+        // Update inventory for each item
+        for (const item of items) {
+          // Get current product quantity
+          const [productCheck] = await db.query('SELECT available_quantity, stock_threshold, alert_enabled FROM products WHERE id = ?', [item.product_id]);
+          const currentQuantity = productCheck[0].available_quantity || 0;
+          const newQuantity = currentQuantity - item.quantity;
+
+          // Update product inventory
+          await db.query(
+            'UPDATE products SET available_quantity = ? WHERE id = ?',
+            [newQuantity, item.product_id]
+          );
+
+          // Record inventory transaction
+          await db.query(
+            'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [item.product_id, item.batch_id || null, 'sale', -item.quantity, currentQuantity, newQuantity, orderId, sales_person_id]
+          );
+
+          // Check for stock alerts
+          const product = productCheck[0];
+          if (product.alert_enabled) {
+            if (newQuantity <= 0) {
+              // Create out of stock alert
+              await db.query(
+                'INSERT INTO inventory_alerts (product_id, alert_type, message) VALUES (?, ?, ?)',
+                [item.product_id, 'out_of_stock', `Product "${product.product_name}" is now out of stock`]
+              );
+            } else if (newQuantity <= product.stock_threshold) {
+              // Create low stock alert
+              await db.query(
+                'INSERT INTO inventory_alerts (product_id, alert_type, message) VALUES (?, ?, ?)',
+                [item.product_id, 'low_stock', `Product "${product.product_name}" is low on stock (${newQuantity} remaining, threshold: ${product.stock_threshold})`]
+              );
+            }
+          }
+        }
       }
 
       // Commit transaction

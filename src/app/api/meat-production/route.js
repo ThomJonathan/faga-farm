@@ -116,19 +116,67 @@ export async function POST(request) {
       WHERE id = ?
     `, [number_of_birds, batch_id]);
 
-    // Log inventory transaction
-    await pool.execute(`
-      INSERT INTO inventory_transactions
-      (product_id, batch_id, transaction_type, quantity_change, reference_id, notes, created_by)
-      VALUES (?, ?, 'production', ?, ?, ?, ?)
-    `, [
-      null, // product_id
-      batch_id,
-      quantity_kg,
-      result.insertId,
-      `Meat production recorded: ${quantity_kg}kg from ${number_of_birds} birds`,
-      recorded_by || null
-    ]);
+    // Check if there's already a meat product for this breed, if not create one
+    const [existingProduct] = await pool.execute(
+      'SELECT id, available_quantity FROM products WHERE breed_id = (SELECT breed_id FROM batches WHERE id = ?) AND product_type = "meat"',
+      [batch_id]
+    );
+
+    let meatProductId;
+    if (existingProduct.length > 0) {
+      // Update existing meat product stock
+      meatProductId = existingProduct[0].id;
+      const currentStock = existingProduct[0].available_quantity || 0;
+      const newStock = currentStock + quantity_kg;
+
+      await pool.execute(
+        'UPDATE products SET available_quantity = ? WHERE id = ?',
+        [newStock, meatProductId]
+      );
+
+      // Record inventory transaction for stock increase
+      await pool.execute(`
+        INSERT INTO inventory_transactions
+        (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes, created_by)
+        VALUES (?, ?, 'production', ?, ?, ?, ?, ?, ?)
+      `, [
+        meatProductId,
+        batch_id,
+        quantity_kg,
+        currentStock,
+        newStock,
+        result.insertId,
+        `Meat production recorded: ${quantity_kg}kg from ${number_of_birds} birds`,
+        recorded_by || null
+      ]);
+    } else {
+      // Create new meat product
+      const [breedInfo] = await pool.execute('SELECT br.name FROM batches b JOIN breeds br ON b.breed_id = br.id WHERE b.id = ?', [batch_id]);
+      const breedName = breedInfo[0].name;
+
+      const [productResult] = await pool.execute(
+        'INSERT INTO products (product_name, product_type, description, unit_price, breed_id, available_quantity, stock_threshold, alert_enabled, is_active) VALUES (?, ?, ?, ?, (SELECT breed_id FROM batches WHERE id = ?), ?, ?, ?, ?)',
+        [`${breedName} Meat`, 'meat', `Fresh ${breedName} meat for sale`, 200.00, batch_id, quantity_kg, 25, true, true]
+      );
+
+      meatProductId = productResult.insertId;
+
+      // Record inventory transaction for new product
+      await pool.execute(`
+        INSERT INTO inventory_transactions
+        (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes, created_by)
+        VALUES (?, ?, 'production', ?, ?, ?, ?, ?, ?)
+      `, [
+        meatProductId,
+        batch_id,
+        quantity_kg,
+        0,
+        quantity_kg,
+        result.insertId,
+        `New meat product created: ${quantity_kg}kg from ${number_of_birds} birds`,
+        recorded_by || null
+      ]);
+    }
 
     return NextResponse.json({
       success: true,

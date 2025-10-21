@@ -4,24 +4,24 @@ import db from '../../../lib/db';
 export async function GET() {
   try {
     const [rows] = await db.query(`
-      SELECT
+      SELECT DISTINCT
         p.*,
         pr.unit_price as current_price,
         pr.effective_date,
-        b.batch_number,
         br.name as breed_name,
-        b.level,
-        b.current_quantity,
+        COALESCE(SUM(b.current_quantity), 0) as total_batch_quantity,
         CASE
           WHEN p.stock_threshold IS NULL OR p.stock_threshold = 0 THEN 'normal'
-          WHEN p.alert_enabled = TRUE AND b.current_quantity <= p.stock_threshold THEN 'low_stock'
-          WHEN b.current_quantity <= 0 THEN 'out_of_stock'
+          WHEN p.alert_enabled = TRUE AND COALESCE(SUM(b.current_quantity), 0) <= p.stock_threshold THEN 'low_stock'
+          WHEN COALESCE(SUM(b.current_quantity), 0) <= 0 THEN 'out_of_stock'
           ELSE 'normal'
         END as stock_status
       FROM products p
       LEFT JOIN prices pr ON p.id = pr.product_id AND pr.is_current = TRUE
-      LEFT JOIN batches b ON p.breed_id = b.breed_id
       LEFT JOIN breeds br ON p.breed_id = br.id
+      LEFT JOIN batches b ON p.breed_id = b.breed_id
+      WHERE p.is_active = TRUE
+      GROUP BY p.id, pr.unit_price, pr.effective_date, br.name
       ORDER BY p.id DESC
     `);
 
@@ -40,10 +40,8 @@ export async function GET() {
       created_at: row.created_at,
       current_price: row.current_price,
       effective_date: row.effective_date,
-      batch_number: row.batch_number,
       breed_name: row.breed_name,
-      level: row.level,
-      current_quantity: row.current_quantity,
+      current_quantity: row.total_batch_quantity,
       stock_status: row.stock_status
     }));
 

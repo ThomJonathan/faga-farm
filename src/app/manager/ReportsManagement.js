@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 
 export default function ReportsManagement() {
-  const [selectedReport, setSelectedReport] = useState('production');
+  const [reportType, setReportType] = useState('production');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
@@ -14,10 +15,9 @@ export default function ReportsManagement() {
   const reportTypes = [
     { id: 'production', name: 'Production Report', icon: '📊' },
     { id: 'sales', name: 'Sales Report', icon: '💰' },
-    { id: 'financial', name: 'Financial Report', icon: '�' },
-    { value: 'inventory', label: 'Inventory Report', icon: '📦' },
-    { value: 'performance', label: 'Performance Report', icon: '📈' },
-    { value: 'sales', label: 'Sales Report', icon: '🛒' }
+    { id: 'financial', name: 'Financial Report', icon: '💰' },
+    { id: 'inventory', name: 'Inventory Report', icon: '📦' },
+    { id: 'performance', name: 'Performance Report', icon: '📈' }
   ];
 
   const generateReport = async () => {
@@ -108,8 +108,8 @@ export default function ReportsManagement() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {reportData.breed_breakdown?.map((breed, index) => (
-                      <tr key={index}>
+                    {reportData.breed_breakdown?.map((breed) => (
+                      <tr key={breed.name || breed.id}>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{breed.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{breed.eggs?.toLocaleString() || '0'}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{breed.meat_kg?.toFixed(1) || '0'}</td>
@@ -161,8 +161,8 @@ export default function ReportsManagement() {
               <div className="bg-white p-4 rounded-lg shadow">
                 <h3 className="text-base font-medium text-gray-900 mb-3">Revenue by Product</h3>
                 <div className="space-y-3">
-                  {reportData.revenue_breakdown?.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center">
+                  {reportData.revenue_breakdown?.map((item) => (
+                    <div key={item.product} className="flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-900 capitalize">{item.product}</span>
                       <span className="text-sm font-semibold text-gray-900">
                         MWK {item.amount?.toLocaleString()}
@@ -177,8 +177,8 @@ export default function ReportsManagement() {
               <div className="bg-white p-4 rounded-lg shadow">
                 <h3 className="text-base font-medium text-gray-900 mb-3">Expenses by Category</h3>
                 <div className="space-y-3">
-                  {reportData.expense_breakdown?.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center">
+                  {reportData.expense_breakdown?.map((item) => (
+                    <div key={item.category} className="flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-900 capitalize">{item.category}</span>
                       <span className="text-sm font-semibold text-gray-900">
                         MWK {item.amount?.toLocaleString()}
@@ -237,8 +237,8 @@ export default function ReportsManagement() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {reportData.inventory_details?.map((item, index) => (
-                      <tr key={index}>
+                    {reportData.inventory_details?.map((item) => (
+                      <tr key={item.name}>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{item.current_stock} {item.unit}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">MWK {item.unit_cost?.toFixed(2)}</td>
@@ -287,8 +287,8 @@ export default function ReportsManagement() {
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             >
               {reportTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.icon} {type.label}
+                <option key={type.value || type.id} value={type.value || type.id}>
+                  {type.icon} {type.label || type.name}
                 </option>
               ))}
             </select>
@@ -330,3 +330,46 @@ export default function ReportsManagement() {
       {reportData && (
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-900">Export Report</h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => exportReport('pdf')}
+                disabled={exporting}
+                className="bg-red-600 text-white px-4 py-2 text-sm rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {exporting ? 'Exporting...' : 'Export PDF'}
+              </button>
+              <button
+                onClick={() => exportReport('excel')}
+                disabled={exporting}
+                className="bg-green-600 text-white px-4 py-2 text-sm rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {exporting ? 'Exporting...' : 'Export Excel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Content */}
+      {reportData && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
+            {reportTypes.find(type => type.value === reportType)?.label || reportType} Report
+          </h2>
+          {renderReportContent()}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Generating report...</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

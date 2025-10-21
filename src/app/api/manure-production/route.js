@@ -95,25 +95,66 @@ export async function POST(request) {
       recorded_by || null
     ]);
 
-    // Log inventory transaction
-    await pool.execute(`
-      INSERT INTO inventory_transactions
-      (product_id, batch_id, transaction_type, quantity_change, reference_id, notes, created_by)
-      VALUES (?, ?, 'production', ?, ?, ?, ?)
-    `, [
-      null, // product_id
-      batch_id,
-      quantity_kg,
-      result.insertId,
-      `Manure production recorded: ${quantity_kg}kg`,
-      recorded_by || null
-    ]);
+    // Start transaction for inventory management
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    return NextResponse.json({
-      success: true,
-      message: 'Manure production recorded successfully',
-      data: { id: result.insertId }
-    });
+    try {
+      // Check if there's already a manure product for this breed, if not create one
+      const [existingProduct] = await connection.execute(
+        'SELECT id, available_quantity FROM products WHERE breed_id = (SELECT breed_id FROM batches WHERE id = ?) AND product_type = "manure"',
+        [batch_id]
+      );
+
+      let manureProductId;
+      if (existingProduct.length > 0) {
+        // Update existing manure product stock
+        manureProductId = existingProduct[0].id;
+        const currentStock = existingProduct[0].available_quantity || 0;
+        const newStock = currentStock + quantity_kg;
+
+        await connection.execute(
+          'UPDATE products SET available_quantity = ? WHERE id = ?',
+          [newStock, manureProductId]
+        );
+
+        // Record inventory transaction for stock increase
+        await connection.execute(
+          'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [manureProductId, batch_id, 'production', quantity_kg, currentStock, newStock, result.insertId, `Manure production recorded: ${quantity_kg}kg`, recorded_by]
+        );
+      } else {
+        // Create new manure product
+        const [breedInfo] = await connection.execute('SELECT br.name FROM batches b JOIN breeds br ON b.breed_id = br.id WHERE b.id = ?', [batch_id]);
+        const breedName = breedInfo[0].name;
+
+        const [productResult] = await connection.execute(
+          'INSERT INTO products (product_name, product_type, description, unit_price, breed_id, available_quantity, stock_threshold, alert_enabled, is_active) VALUES (?, ?, ?, ?, (SELECT breed_id FROM batches WHERE id = ?), ?, ?, ?, ?)',
+          [`${breedName} Manure`, 'manure', `Organic ${breedName} manure for sale`, 10.00, batch_id, quantity_kg, 100, true, true]
+        );
+
+        manureProductId = productResult.insertId;
+
+        // Record inventory transaction for new product
+        await connection.execute(
+          'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [manureProductId, batch_id, 'production', quantity_kg, 0, quantity_kg, result.insertId, `New manure product created: ${quantity_kg}kg`, recorded_by]
+        );
+      }
+
+      await connection.commit();
+      connection.release();
+
+      return NextResponse.json({
+        success: true,
+        message: 'Manure production recorded successfully',
+        data: { id: result.insertId }
+      });
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
 
   } catch (error) {
     console.error('Error creating manure production:', error);

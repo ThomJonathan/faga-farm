@@ -174,17 +174,85 @@ export async function POST(request) {
       );
     }
 
-    const [result] = await pool.execute(
-      `INSERT INTO egg_collections
-       (batch_id, collection_date, quantity, egg_type, collected_by, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [batch_id, collection_date, quantity, egg_type, collected_by, notes || null]
-    );
+    // Start transaction
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    return NextResponse.json(
-      { message: 'Egg collection recorded successfully', id: result.insertId },
-      { status: 201 }
-    );
+    try {
+      const [result] = await connection.execute(
+        `INSERT INTO egg_collections
+         (batch_id, collection_date, quantity, egg_type, collected_by, notes)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [batch_id, collection_date, quantity, egg_type, collected_by, notes || null]
+      );
+
+      // If eggs are for sale, create/update egg product in inventory
+      if (egg_type === 'sales') {
+        // Get breed information for the batch
+        const [batchInfo] = await connection.execute(
+          'SELECT breed_id FROM batches WHERE id = ?',
+          [batch_id]
+        );
+
+        if (batchInfo.length > 0) {
+          const breedId = batchInfo[0].breed_id;
+
+          // Check if there's already an egg product for this breed
+          const [existingProduct] = await connection.execute(
+            'SELECT id, available_quantity FROM products WHERE breed_id = ? AND product_type = "eggs"',
+            [breedId]
+          );
+
+          let eggProductId;
+          if (existingProduct.length > 0) {
+            // Update existing egg product stock
+            eggProductId = existingProduct[0].id;
+            const currentStock = existingProduct[0].available_quantity || 0;
+            const newStock = currentStock + quantity;
+
+            await connection.execute(
+              'UPDATE products SET available_quantity = ? WHERE id = ?',
+              [newStock, eggProductId]
+            );
+
+            // Record inventory transaction for stock increase
+            await connection.execute(
+              'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [eggProductId, batch_id, 'production', quantity, currentStock, newStock, result.insertId, `Egg collection: ${quantity} eggs added to inventory`]
+            );
+          } else {
+            // Create new egg product
+            const [breedInfo] = await connection.execute('SELECT name FROM breeds WHERE id = ?', [breedId]);
+            const breedName = breedInfo[0].name;
+
+            const [productResult] = await connection.execute(
+              'INSERT INTO products (product_name, product_type, description, unit_price, breed_id, available_quantity, stock_threshold, alert_enabled, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              [`${breedName} Eggs`, 'eggs', `Fresh ${breedName} eggs for sale`, 50.00, breedId, quantity, 100, true, true]
+            );
+
+            eggProductId = productResult.insertId;
+
+            // Record inventory transaction for new product
+            await connection.execute(
+              'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [eggProductId, batch_id, 'production', quantity, 0, quantity, result.insertId, `New egg product created: ${quantity} eggs added to inventory`]
+            );
+          }
+        }
+      }
+
+      await connection.commit();
+      connection.release();
+
+      return NextResponse.json(
+        { message: 'Egg collection recorded successfully', id: result.insertId },
+        { status: 201 }
+      );
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
   } catch (error) {
     console.error('Error creating egg collection:', error);
     return NextResponse.json(

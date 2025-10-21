@@ -88,15 +88,82 @@ export async function PUT(request) {
     );
 
     // Update egg collection quantity (remove hatched eggs since they are now chicks)
-    await pool.execute(
-      'UPDATE egg_collections SET quantity = quantity - ? WHERE id = ?',
-      [incubation.number_of_eggs, incubation.collection_id]
-    );
+    if (incubation.collection_id) {
+      await pool.execute(
+        'UPDATE egg_collections SET quantity = quantity - ? WHERE id = ?',
+        [incubation.number_of_eggs, incubation.collection_id]
+      );
+    }
 
-    return NextResponse.json(
-      { message: 'Hatching recorded successfully' },
-      { status: 200 }
-    );
+    // Start transaction for inventory management
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Check if there's a chick product for this breed and add hatched chicks to inventory
+      const [incubationInfo] = await connection.execute(
+        'SELECT ei.breed_id FROM egg_incubations ei WHERE ei.id = ?',
+        [id]
+      );
+
+      if (incubationInfo.length > 0) {
+        const breedId = incubationInfo[0].breed_id;
+
+        // Check if there's already a chick product for this breed
+        const [existingProduct] = await connection.execute(
+          'SELECT id, available_quantity FROM products WHERE breed_id = ? AND product_type = "day_old_chicks"',
+          [breedId]
+        );
+
+        let chickProductId;
+        if (existingProduct.length > 0) {
+          // Update existing chick product stock
+          chickProductId = existingProduct[0].id;
+          const currentStock = existingProduct[0].available_quantity || 0;
+          const newStock = currentStock + hatched_chicks;
+
+          await connection.execute(
+            'UPDATE products SET available_quantity = ? WHERE id = ?',
+            [newStock, chickProductId]
+          );
+
+          // Record inventory transaction for stock increase
+          await connection.execute(
+            'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [chickProductId, null, 'production', hatched_chicks, currentStock, newStock, id, `Egg incubation hatched: ${hatched_chicks} chicks added to inventory`]
+          );
+        } else {
+          // Create new chick product
+          const [breedInfo] = await connection.execute('SELECT name FROM breeds WHERE id = ?', [breedId]);
+          const breedName = breedInfo[0].name;
+
+          const [productResult] = await connection.execute(
+            'INSERT INTO products (product_name, product_type, description, unit_price, breed_id, available_quantity, stock_threshold, alert_enabled, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [`${breedName} Chicks`, 'day_old_chicks', `Live ${breedName} chicks for sale`, 500.00, breedId, hatched_chicks, 50, true, true]
+          );
+
+          chickProductId = productResult.insertId;
+
+          // Record inventory transaction for new product
+          await connection.execute(
+            'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [chickProductId, null, 'production', hatched_chicks, 0, hatched_chicks, id, `New chick product created from incubation: ${hatched_chicks} chicks`]
+          );
+        }
+      }
+
+      await connection.commit();
+      connection.release();
+
+      return NextResponse.json(
+        { message: 'Hatching recorded successfully' },
+        { status: 200 }
+      );
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
   } catch (error) {
     console.error('Error recording hatching:', error);
     return NextResponse.json(

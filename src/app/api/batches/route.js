@@ -100,11 +100,47 @@ export async function POST(request) {
       [initial_quantity, house_id]
     );
 
-    // Record inventory transaction for new batch production
-    await pool.execute(
-      'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [null, result.insertId, 'production', initial_quantity, 0, initial_quantity, result.insertId, `New batch ${batchNumber} created`]
+    // Check if there's already a chick product for this breed, if not create one
+    const [existingProduct] = await pool.execute(
+      'SELECT id, available_quantity FROM products WHERE breed_id = ? AND product_type = "day_old_chicks"',
+      [breed_id]
     );
+
+    let chickProductId;
+    if (existingProduct.length > 0) {
+      // Update existing chick product stock
+      chickProductId = existingProduct[0].id;
+      const currentStock = existingProduct[0].available_quantity || 0;
+      const newStock = currentStock + initial_quantity;
+
+      await pool.execute(
+        'UPDATE products SET available_quantity = ? WHERE id = ?',
+        [newStock, chickProductId]
+      );
+
+      // Record inventory transaction for stock increase
+      await pool.execute(
+        'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [chickProductId, result.insertId, 'production', initial_quantity, currentStock, newStock, result.insertId, `New batch ${batchNumber} created - chicks added to inventory`]
+      );
+    } else {
+      // Create new chick product
+      const [breedInfo] = await pool.execute('SELECT name FROM breeds WHERE id = ?', [breed_id]);
+      const breedName = breedInfo[0].name;
+
+      const [productResult] = await pool.execute(
+        'INSERT INTO products (product_name, product_type, description, unit_price, breed_id, available_quantity, stock_threshold, alert_enabled, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [`${breedName} Chicks`, 'day_old_chicks', `Live ${breedName} chicks for sale`, 500.00, breed_id, initial_quantity, 50, true, true]
+      );
+
+      chickProductId = productResult.insertId;
+
+      // Record inventory transaction for new product
+      await pool.execute(
+        'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [chickProductId, result.insertId, 'production', initial_quantity, 0, initial_quantity, result.insertId, `New chick product created for batch ${batchNumber}`]
+      );
+    }
 
     return NextResponse.json(
       { message: 'Batch created successfully', id: result.insertId, batch_number: batchNumber },
