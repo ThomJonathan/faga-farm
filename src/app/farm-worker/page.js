@@ -8,6 +8,11 @@ import IncubatorsManagement from './IncubatorsManagement';
 import BatchesManagement from './BatchesManagement';
 import EggCollectionManagement from './EggCollectionManagement';
 import MortalityManagement from './MortalityManagement';
+import VaccinationManagement from './VaccinationManagement';
+import TreatmentManagement from './TreatmentManagement';
+import ExpenseManagement from './ExpenseManagement';
+import ManureProductionManagement from './ManureProductionManagement';
+import MeatProductionManagement from './MeatProductionManagement';
 
 export default function FarmWorkerDashboard() {
   const [user, setUser] = useState(null);
@@ -42,6 +47,16 @@ export default function FarmWorkerDashboard() {
         return <EggCollectionManagement />;
       case 'mortality':
         return <MortalityManagement />;
+      case 'vaccinations':
+        return <VaccinationManagement />;
+      case 'treatments':
+        return <TreatmentManagement />;
+      case 'expenses':
+        return <ExpenseManagement />;
+      case 'manure-production':
+        return <ManureProductionManagement />;
+      case 'meat-production':
+        return <MeatProductionManagement />;
       default:
         return <DashboardContent />;
     }
@@ -183,8 +198,6 @@ export default function FarmWorkerDashboard() {
       </div>
     );
   };
-
-  // Placeholder components for other sections
 
   if (!user) {
     return <div>Loading...</div>;

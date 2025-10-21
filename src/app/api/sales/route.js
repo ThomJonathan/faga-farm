@@ -51,13 +51,20 @@ export async function POST(request) {
 
       const saleId = saleResult.insertId;
 
-      // Insert sale items if provided
+      // Insert sale items if provided and update inventory
       if (items && items.length > 0) {
         for (const item of items) {
           // Verify product exists
-          const [productCheck] = await db.query('SELECT id FROM products WHERE id = ?', [item.product_id]);
+          const [productCheck] = await db.query('SELECT id, available_quantity, stock_threshold, alert_enabled FROM products WHERE id = ?', [item.product_id]);
           if (productCheck.length === 0) {
             throw new Error(`Product with ID ${item.product_id} not found`);
+          }
+
+          const currentQuantity = productCheck[0].available_quantity || 0;
+
+          // Check if sufficient stock
+          if (currentQuantity < item.quantity) {
+            throw new Error(`Insufficient stock for product ${item.product_id}. Available: ${currentQuantity}, Requested: ${item.quantity}`);
           }
 
           // Verify batch exists if provided
@@ -68,10 +75,42 @@ export async function POST(request) {
             }
           }
 
+          // Insert sale item
           await db.query(
             'INSERT INTO sale_items (sale_id, product_id, batch_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)',
             [saleId, item.product_id, item.batch_id || null, item.quantity, item.unit_price, item.total_price]
           );
+
+          // Update product inventory
+          const newQuantity = currentQuantity - item.quantity;
+          await db.query(
+            'UPDATE products SET available_quantity = ? WHERE id = ?',
+            [newQuantity, item.product_id]
+          );
+
+          // Record inventory transaction
+          await db.query(
+            'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [item.product_id, item.batch_id || null, 'sale', -item.quantity, currentQuantity, newQuantity, saleId, sold_by]
+          );
+
+          // Check for stock alerts
+          const product = productCheck[0];
+          if (product.alert_enabled) {
+            if (newQuantity <= 0) {
+              // Create out of stock alert
+              await db.query(
+                'INSERT INTO inventory_alerts (product_id, alert_type, message) VALUES (?, ?, ?)',
+                [item.product_id, 'out_of_stock', `Product "${product.name}" is now out of stock`]
+              );
+            } else if (newQuantity <= product.stock_threshold) {
+              // Create low stock alert
+              await db.query(
+                'INSERT INTO inventory_alerts (product_id, alert_type, message) VALUES (?, ?, ?)',
+                [item.product_id, 'low_stock', `Product "${product.name}" is low on stock (${newQuantity} remaining, threshold: ${product.stock_threshold})`]
+              );
+            }
+          }
         }
       }
 

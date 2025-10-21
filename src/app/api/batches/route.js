@@ -100,6 +100,12 @@ export async function POST(request) {
       [initial_quantity, house_id]
     );
 
+    // Record inventory transaction for new batch production
+    await pool.execute(
+      'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [null, result.insertId, 'production', initial_quantity, 0, initial_quantity, result.insertId, `New batch ${batchNumber} created`]
+    );
+
     return NextResponse.json(
       { message: 'Batch created successfully', id: result.insertId, batch_number: batchNumber },
       { status: 201 }
