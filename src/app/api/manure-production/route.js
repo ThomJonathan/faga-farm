@@ -9,7 +9,7 @@ export async function GET(request) {
     const endDate = searchParams.get('end_date');
 
     let query = `
-      SELECT mp.*, b.batch_name, u.name as recorded_by_name
+      SELECT mp.*, b.batch_number, u.name as recorded_by_name
       FROM manure_production mp
       LEFT JOIN batches b ON mp.batch_id = b.id
       LEFT JOIN users u ON mp.recorded_by = u.id
@@ -106,7 +106,7 @@ export async function POST(request) {
       quantity_kg,
       result.insertId,
       `Manure production recorded: ${quantity_kg}kg`,
-      recorded_by
+      recorded_by || null
     ]);
 
     return NextResponse.json({

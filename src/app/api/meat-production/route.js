@@ -9,9 +9,10 @@ export async function GET(request) {
     const endDate = searchParams.get('end_date');
 
     let query = `
-      SELECT mp.*, b.batch_name, u.name as recorded_by_name
+      SELECT mp.*, b.batch_number, b.level, br.name as breed_name, u.name as recorded_by_name
       FROM meat_production mp
       LEFT JOIN batches b ON mp.batch_id = b.id
+      LEFT JOIN breeds br ON b.breed_id = br.id
       LEFT JOIN users u ON mp.recorded_by = u.id
     `;
 
@@ -62,6 +63,7 @@ export async function POST(request) {
       batch_id,
       production_date,
       quantity_kg,
+      number_of_birds,
       average_weight_kg,
       quality_rating,
       processing_cost,
@@ -69,9 +71,9 @@ export async function POST(request) {
       recorded_by
     } = body;
 
-    if (!batch_id || !production_date || !quantity_kg) {
+    if (!batch_id || !production_date || !quantity_kg || !number_of_birds) {
       return NextResponse.json(
-        { success: false, error: 'Batch ID, production date, and quantity are required' },
+        { success: false, error: 'Batch ID, production date, quantity, and number of birds are required' },
         { status: 400 }
       );
     }
@@ -91,20 +93,28 @@ export async function POST(request) {
 
     const query = `
       INSERT INTO meat_production
-      (batch_id, production_date, quantity_kg, average_weight_kg, quality_rating, processing_cost, notes, recorded_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (batch_id, production_date, quantity_kg, number_of_birds, average_weight_kg, quality_rating, processing_cost, notes, recorded_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const [result] = await pool.execute(query, [
       batch_id,
       production_date,
       quantity_kg,
+      number_of_birds,
       average_weight_kg || null,
       quality_rating || 'standard',
       processing_cost || 0,
       notes || null,
       recorded_by || null
     ]);
+
+    // Update batch quantity (reduce by number of birds slaughtered)
+    await pool.execute(`
+      UPDATE batches
+      SET current_quantity = current_quantity - ?
+      WHERE id = ?
+    `, [number_of_birds, batch_id]);
 
     // Log inventory transaction
     await pool.execute(`
@@ -116,8 +126,8 @@ export async function POST(request) {
       batch_id,
       quantity_kg,
       result.insertId,
-      `Meat production recorded: ${quantity_kg}kg`,
-      recorded_by
+      `Meat production recorded: ${quantity_kg}kg from ${number_of_birds} birds`,
+      recorded_by || null
     ]);
 
     return NextResponse.json({

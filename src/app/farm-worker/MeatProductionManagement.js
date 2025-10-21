@@ -12,6 +12,7 @@ export default function MeatProductionManagement() {
     batch_id: '',
     production_date: new Date().toISOString().split('T')[0],
     quantity_kg: '',
+    number_of_birds: '',
     average_weight_kg: '',
     quality_rating: 'standard',
     processing_cost: '',
@@ -43,8 +44,8 @@ export default function MeatProductionManagement() {
       const response = await fetch('/api/batches');
       if (response.ok) {
         const data = await response.json();
-        // Only show active batches, especially those ready for meat production
-        setBatches(data.filter(batch => batch.status === 'active'));
+        // Only show active batches that are adults (level = 'adult') ready for meat production
+        setBatches(data.filter(batch => batch.status === 'active' && batch.level === 'adult'));
       }
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -98,6 +99,7 @@ export default function MeatProductionManagement() {
           batch_id: '',
           production_date: new Date().toISOString().split('T')[0],
           quantity_kg: '',
+          number_of_birds: '',
           average_weight_kg: '',
           quality_rating: 'standard',
           processing_cost: '',
@@ -118,6 +120,7 @@ export default function MeatProductionManagement() {
       batch_id: '',
       production_date: new Date().toISOString().split('T')[0],
       quantity_kg: '',
+      number_of_birds: '',
       average_weight_kg: '',
       quality_rating: 'standard',
       processing_cost: '',
@@ -138,7 +141,6 @@ export default function MeatProductionManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Meat Production Management</h1>
         <button
           onClick={() => setShowAddForm(true)}
           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
@@ -179,16 +181,24 @@ export default function MeatProductionManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Quantity (kg)</label>
+                <label className="block text-sm font-medium text-gray-700">Number of Birds</label>
                 <input
                   type="number"
                   required
-                  min="0.01"
-                  step="0.01"
-                  value={formData.quantity_kg}
-                  onChange={(e) => setFormData({ ...formData, quantity_kg: e.target.value })}
+                  min="1"
+                  value={formData.number_of_birds}
+                  onChange={(e) => {
+                    const birds = parseInt(e.target.value) || 0;
+                    const avgWeight = formData.average_weight_kg ? parseFloat(formData.average_weight_kg) : 0;
+                    const calculatedQuantity = birds * avgWeight;
+                    setFormData({
+                      ...formData,
+                      number_of_birds: e.target.value,
+                      quantity_kg: calculatedQuantity > 0 ? calculatedQuantity.toFixed(2) : ''
+                    });
+                  }}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="Total meat weight in kg"
+                  placeholder="Number of birds slaughtered"
                 />
               </div>
               <div>
@@ -197,9 +207,31 @@ export default function MeatProductionManagement() {
                   type="number"
                   step="0.01"
                   value={formData.average_weight_kg}
-                  onChange={(e) => setFormData({ ...formData, average_weight_kg: e.target.value })}
+                  onChange={(e) => {
+                    const avgWeight = parseFloat(e.target.value) || 0;
+                    const birds = parseInt(formData.number_of_birds) || 0;
+                    const calculatedQuantity = birds * avgWeight;
+                    setFormData({
+                      ...formData,
+                      average_weight_kg: e.target.value,
+                      quantity_kg: calculatedQuantity > 0 ? calculatedQuantity.toFixed(2) : ''
+                    });
+                  }}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  placeholder="Optional: average weight per bird"
+                  placeholder="Average weight per bird"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Total Quantity (kg)</label>
+                <input
+                  type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
+                  value={formData.quantity_kg}
+                  onChange={(e) => setFormData({ ...formData, quantity_kg: e.target.value })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  placeholder="Total meat weight in kg (auto-calculated)"
                 />
               </div>
               <div>
@@ -216,7 +248,7 @@ export default function MeatProductionManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Processing Cost ($)</label>
+                <label className="block text-sm font-medium text-gray-700">Processing Cost (MWK)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -269,7 +301,7 @@ export default function MeatProductionManagement() {
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Processing Cost</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">${summary.total_processing_cost.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-green-600 mt-2">MWK {summary.total_processing_cost.toFixed(2)}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Avg Bird Weight</h3>
@@ -339,7 +371,7 @@ export default function MeatProductionManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${record.processing_cost || 0}
+                      MWK {record.processing_cost || 0}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                       {record.notes || '-'}

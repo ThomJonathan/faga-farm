@@ -126,7 +126,6 @@ export default function ManureProductionManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Manure Production Management</h1>
         <button
           onClick={() => setShowAddForm(true)}
           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -235,7 +234,7 @@ export default function ManureProductionManagement() {
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Quality Distribution</h3>
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 space-y-1 text-gray-900">
               {Object.entries(summary.quality_counts).map(([rating, count]) => (
                 <div key={rating} className="flex justify-between text-sm">
                   <span className="capitalize">{rating}:</span>
