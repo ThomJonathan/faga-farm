@@ -9,6 +9,7 @@ import GlobalSearch from './GlobalSearch';
 export default function DashboardLayout({ children, role, user, currentPage, onPageChange }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState({});
   const pathname = usePathname();
   const router = useRouter();
 
@@ -26,18 +27,35 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
   const navigation = {
     farm_worker: [
       { name: 'Dashboard', href: '/farm-worker', icon: '📊' },
-      { name: 'Houses', href: '/farm-worker/houses', icon: '🏠' },
-      { name: 'Breeds', href: '/farm-worker/breeds', icon: '🐔'},
-      { name: 'Incubators', href: '/farm-worker/incubators', icon: '🥚' },
-      { name: 'Batches', href: '/farm-worker/batches', icon: '📦' },
-      { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🧺' },
-      { name: 'Egg Incubation', href: '/farm-worker/egg-incubation', icon: '🌡️' },
-      { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀' },
-      { name: 'Vaccinations', href: '/farm-worker/vaccinations', icon: '💉' },
-      { name: 'Treatments', href: '/farm-worker/treatments', icon: '🩺' },
-
-      { name: 'Manure Production', href: '/farm-worker/manure-production', icon: '💩' },
-      { name: 'Meat Production', href: '/farm-worker/meat-production', icon: '🥩' },
+      {
+        name: 'Production',
+        icon: '🐣',
+        children: [
+          { name: 'Batches', href: '/farm-worker/batches', icon: '📦' },
+          { name: 'Egg Collection', href: '/farm-worker/egg-collection', icon: '🧺' },
+          { name: 'Egg Incubation', href: '/farm-worker/egg-incubation', icon: '🌡️' },
+          { name: 'Meat Production', href: '/farm-worker/meat-production', icon: '🥩' },
+          { name: 'Manure Production', href: '/farm-worker/manure-production', icon: '💩' },
+        ]
+      },
+      {
+        name: 'Health',
+        icon: '💊',
+        children: [
+          { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀' },
+          { name: 'Vaccinations', href: '/farm-worker/vaccinations', icon: '💉' },
+          { name: 'Treatments', href: '/farm-worker/treatments', icon: '🩺' },
+        ]
+      },
+      {
+        name: 'Farm Setup',
+        icon: '⚙️',
+        children: [
+          { name: 'Houses', href: '/farm-worker/houses', icon: '🏠' },
+          { name: 'Breeds', href: '/farm-worker/breeds', icon: '🐔' },
+          { name: 'Incubators', href: '/farm-worker/incubators', icon: '🥚' },
+        ]
+      },
     ],
     sales_person: [
       { name: 'Dashboard', href: '/sales-person', icon: '🏠' },
@@ -55,6 +73,32 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
   };
 
   const currentNav = navigation[role] || [];
+
+  const toggleGroup = (groupName) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }));
+  };
+
+  // Auto-expand groups that contain active child items
+  const getExpandedGroups = () => {
+    const autoExpanded = { ...expandedGroups };
+    currentNav.forEach((item) => {
+      if (item.children) {
+        const hasActiveChild = item.children.some((child) => {
+          const isActive = role === 'sales_person'
+            ? currentPage === child.name.toLowerCase().replace(' ', '')
+            : pathname === child.href;
+          return isActive;
+        });
+        if (hasActiveChild) {
+          autoExpanded[item.name] = true;
+        }
+      }
+    });
+    return autoExpanded;
+  };
 
   const handleNavClick = (item, e) => {
     if (item.comingSoon) {
@@ -118,35 +162,100 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
           <nav className="p-4 mt-2">
             {currentNav.map((item) => {
               const isActive = role === 'sales_person' ? currentPage === item.name.toLowerCase().replace(' ', '') : pathname === item.href;
-              return (
-                <div
-                  key={item.name}
-                  className={`block px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : item.comingSoon
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  onClick={(e) => {
-                    if (item.comingSoon) {
-                      e.preventDefault();
-                      alert('Coming Soon!');
-                      return;
-                    }
-                    if (role === 'sales_person' && onPageChange) {
-                      onPageChange(item.name.toLowerCase().replace(' ', ''));
-                    } else {
-                      // For other roles, use Link behavior
-                      window.location.href = item.href;
-                    }
-                  }}
-                >
-                  <span className="mr-2">{item.icon}</span>
-                  {item.name}
-                  {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
-                </div>
-              );
+              if (item.children) {
+                const isExpanded = getExpandedGroups()[item.name];
+                return (
+                  <div key={item.name}>
+                    <div
+                      className={`block px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                      onClick={() => toggleGroup(item.name)}
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.name}
+                      <span className="ml-auto">{isExpanded ? '▼' : '▶'}</span>
+                    </div>
+                    {isExpanded && (
+                      <div className="ml-4 mt-1">
+                        {item.children.map((child) => {
+                          const childIsActive = role === 'sales_person' ? currentPage === child.name.toLowerCase().replace(' ', '') : pathname === child.href;
+                          return (
+                            <div
+                              key={child.name}
+                              className={`block px-3 py-1 rounded-md text-sm cursor-pointer ${
+                                childIsActive
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : child.comingSoon
+                                  ? 'text-gray-400 cursor-not-allowed'
+                                  : 'text-gray-600 hover:bg-gray-100'
+                              }`}
+                              onClick={(e) => {
+                                if (child.comingSoon) {
+                                  e.preventDefault();
+                                  alert('Coming Soon!');
+                                  return;
+                                }
+                                if (role === 'farm_worker' && onPageChange) {
+                                  onPageChange(child.name.toLowerCase().replace(' ', '-'));
+                                  setSidebarOpen(false);
+                                } else if (role === 'sales_person' && onPageChange) {
+                                  onPageChange(child.name.toLowerCase().replace(' ', ''));
+                                  setSidebarOpen(false);
+                                } else {
+                                  router.push(child.href);
+                                  setSidebarOpen(false);
+                                }
+                              }}
+                            >
+                              <span className="mr-2">{child.icon}</span>
+                              {child.name}
+                              {child.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                return (
+                  <div
+                    key={item.name}
+                    className={`block px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-700'
+                        : item.comingSoon
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    onClick={(e) => {
+                      if (item.comingSoon) {
+                        e.preventDefault();
+                        alert('Coming Soon!');
+                        return;
+                      }
+                      if (role === 'farm_worker' && onPageChange) {
+                        onPageChange(item.name.toLowerCase().replace(' ', '-'));
+                        setSidebarOpen(false);
+                      } else if (role === 'sales_person' && onPageChange) {
+                        onPageChange(item.name.toLowerCase().replace(' ', ''));
+                        setSidebarOpen(false);
+                      } else {
+                        // For other roles, use Link behavior
+                        router.push(item.href);
+                        setSidebarOpen(false);
+                      }
+                    }}
+                  >
+                    <span className="mr-2">{item.icon}</span>
+                    {item.name}
+                    {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
+                  </div>
+                );
+              }
             })}
             <div className="mt-4 border-t pt-4">
               <button
@@ -166,35 +275,92 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
           <nav className="flex-1 p-4 overflow-auto">
             {currentNav.map((item) => {
               const isActive = role === 'sales_person' ? currentPage === item.name.toLowerCase().replace(' ', '') : pathname === item.href;
-              return (
-                <div
-                  key={item.name}
-                  className={`block px-3 py-2 rounded-md text-sm font-medium mb-1 cursor-pointer ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : item.comingSoon
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  onClick={(e) => {
-                    if (item.comingSoon) {
-                      e.preventDefault();
-                      alert('Coming Soon!');
-                      return;
-                    }
-                    if (role === 'sales_person' && onPageChange) {
-                      onPageChange(item.name.toLowerCase().replace(' ', ''));
-                    } else {
-                      // For other roles, use Link behavior
-                      window.location.href = item.href;
-                    }
-                  }}
-                >
-                  <span className="mr-2">{item.icon}</span>
-                  {item.name}
-                  {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
-                </div>
-              );
+              if (item.children) {
+                const isExpanded = getExpandedGroups()[item.name];
+                return (
+                  <div key={item.name} className="mb-1">
+                    <div
+                      className={`block px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                      onClick={() => toggleGroup(item.name)}
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.name}
+                      <span className="ml-auto">{isExpanded ? '▼' : '▶'}</span>
+                    </div>
+                    {isExpanded && (
+                      <div className="ml-4 mt-1">
+                        {item.children.map((child) => {
+                          const childIsActive = role === 'sales_person' ? currentPage === child.name.toLowerCase().replace(' ', '') : pathname === child.href;
+                          return (
+                            <div
+                              key={child.name}
+                              className={`block px-3 py-1 rounded-md text-sm cursor-pointer ${
+                                childIsActive
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : child.comingSoon
+                                  ? 'text-gray-400 cursor-not-allowed'
+                                  : 'text-gray-600 hover:bg-gray-100'
+                              }`}
+                              onClick={(e) => {
+                                if (child.comingSoon) {
+                                  e.preventDefault();
+                                  alert('Coming Soon!');
+                                  return;
+                                }
+                                if (role === 'farm_worker' && onPageChange) {
+                                  onPageChange(child.name.toLowerCase().replace(' ', '-'));
+                                } else if (role === 'sales_person' && onPageChange) {
+                                  onPageChange(child.name.toLowerCase().replace(' ', ''));
+                                } else {
+                                  router.push(child.href);
+                                }
+                              }}
+                            >
+                              <span className="mr-2">{child.icon}</span>
+                              {child.name}
+                              {child.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                return (
+                  <div
+                    key={item.name}
+                    className={`block px-3 py-2 rounded-md text-sm font-medium mb-1 cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-700'
+                        : item.comingSoon
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    onClick={(e) => {
+                      if (item.comingSoon) {
+                        e.preventDefault();
+                        alert('Coming Soon!');
+                        return;
+                      }
+                      if (role === 'sales_person' && onPageChange) {
+                        onPageChange(item.name.toLowerCase().replace(' ', ''));
+                      } else {
+                        // For other roles, use Link behavior
+                        router.push(item.href);
+                      }
+                    }}
+                  >
+                    <span className="mr-2">{item.icon}</span>
+                    {item.name}
+                    {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
+                  </div>
+                );
+              }
             })}
           </nav>
           <div className="p-4 border-t">

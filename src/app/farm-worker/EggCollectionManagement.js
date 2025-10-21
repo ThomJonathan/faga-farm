@@ -254,40 +254,37 @@ export default function EggCollectionManagement() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Filter Collections</h2>
-        <div className="flex space-x-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Filter Type</label>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-            >
-              <option value="all">All Time</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
-            </select>
-          </div>
-          {filter !== 'all' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Egg Collections</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">Egg Collections</h2>
+            <div className="flex space-x-4 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Filter Type</label>
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                >
+                  <option value="all">All Time</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+              {filter !== 'all' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           {loading ? (

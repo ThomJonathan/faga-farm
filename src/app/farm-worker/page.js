@@ -7,6 +7,7 @@ import BreedsManagement from './BreedsManagement';
 import IncubatorsManagement from './IncubatorsManagement';
 import BatchesManagement from './BatchesManagement';
 import EggCollectionManagement from './EggCollectionManagement';
+import EggIncubationManagement from './EggIncubationManagement';
 import MortalityManagement from './MortalityManagement';
 import VaccinationManagement from './VaccinationManagement';
 import TreatmentManagement from './TreatmentManagement';
@@ -45,6 +46,8 @@ export default function FarmWorkerDashboard() {
         return <BatchesManagement />;
       case 'egg-collection':
         return <EggCollectionManagement />;
+      case 'egg-incubation':
+        return <EggIncubationManagement />;
       case 'mortality':
         return <MortalityManagement />;
       case 'vaccinations':
@@ -63,16 +66,19 @@ export default function FarmWorkerDashboard() {
 
   const DashboardContent = () => {
     const [dashboardData, setDashboardData] = useState({
-      activeBatches: 0,
-      todaysEggCollection: 0,
-      mortalityRate: 0,
-      availableHouses: 0,
+      activeBatches: [],
+      todaysEggCollection: [],
+      totalMortality: 0,
+      availableHouses: [],
       recentActivities: []
     });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
       fetchDashboardData();
+      // Set up real-time updates every 30 seconds
+      const interval = setInterval(fetchDashboardData, 30000);
+      return () => clearInterval(interval);
     }, []);
 
     const fetchDashboardData = async () => {
@@ -89,38 +95,79 @@ export default function FarmWorkerDashboard() {
         const mortalityRecords = mortalityRes.ok ? await mortalityRes.json() : [];
         const houses = housesRes.ok ? await housesRes.json() : [];
 
-        const activeBatches = batches.filter(batch => batch.status === 'active').length;
+        const activeBatches = batches.filter(batch => batch.status === 'active');
+        const activeBatchesCount = activeBatches.length;
 
-        const today = new Date().toISOString().split('T')[0];
-        const todaysEggCollection = eggCollections.records
-          .filter(record => record.collection_date === today)
-          .reduce((sum, record) => sum + record.quantity, 0);
+        // Group active batches by breed
+        const breedsCount = {};
+        activeBatches.forEach(batch => {
+          const breed = batch.breed_name || 'Unknown';
+          breedsCount[breed] = (breedsCount[breed] || 0) + 1;
+        });
 
-        const totalDeaths = mortalityRecords.reduce((sum, record) => sum + record.dead_count, 0);
-        const totalInitialQuantity = batches.reduce((sum, batch) => sum + batch.initial_quantity, 0);
-        const mortalityRate = totalInitialQuantity > 0 ? ((totalDeaths / totalInitialQuantity) * 100).toFixed(1) : 0;
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0];
+        const todaysCollections = eggCollections.records.filter(record => {
+          const recordDate = new Date(record.collection_date);
+          const recordDateString = recordDate.toISOString().split('T')[0];
+          console.log('Today:', todayString, 'Record date:', recordDateString, 'Match:', recordDateString === todayString);
+          return recordDateString === todayString;
+        });
+        const todaysEggCollection = todaysCollections.reduce((sum, record) => sum + record.quantity, 0);
 
-        const availableHouses = houses.filter(house => house.is_active).length;
+        // Group today's collections by batch
+        const todaysBatches = {};
+        todaysCollections.forEach(record => {
+          const batch = record.batch_number;
+          todaysBatches[batch] = (todaysBatches[batch] || 0) + record.quantity;
+        });
+
+        const totalMortality = mortalityRecords.reduce((sum, record) => sum + record.dead_count, 0);
+
+        const availableHouses = houses.filter(house => house.is_active);
+        const availableHousesCount = availableHouses.length;
+
+        // Get batches per house
+        const houseBatches = {};
+        activeBatches.forEach(batch => {
+          const house = batch.house_name || 'Unknown';
+          if (!houseBatches[house]) houseBatches[house] = [];
+          houseBatches[house].push(batch.batch_number);
+        });
 
         // Get recent activities (last 5 records from different sources)
         const activities = [
           ...eggCollections.records.slice(0, 3).map(record => ({
             type: 'egg_collection',
             message: `Egg collection: ${record.quantity} eggs from batch ${record.batch_number}`,
-            date: record.collection_date
+            date: record.collection_date,
+            timestamp: new Date(record.collection_date).getTime()
           })),
           ...mortalityRecords.slice(0, 2).map(record => ({
             type: 'mortality',
             message: `Mortality recorded: ${record.dead_count} deaths in batch ${record.batch_number}`,
-            date: record.date_recorded
+            date: record.date_recorded,
+            timestamp: new Date(record.date_recorded).getTime()
           }))
-        ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+        ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
 
         setDashboardData({
-          activeBatches,
-          todaysEggCollection,
-          mortalityRate,
-          availableHouses,
+          activeBatches: {
+            count: activeBatchesCount,
+            breeds: breedsCount
+          },
+          todaysEggCollection: {
+            total: todaysEggCollection,
+            batches: todaysBatches
+          },
+          totalMortality,
+          availableHouses: {
+            count: availableHousesCount,
+            houses: availableHouses.slice(0, 3).map(house => ({
+              name: house.name,
+              batches: houseBatches[house.name] || []
+            }))
+          },
           recentActivities: activities
         });
       } catch (error) {
@@ -138,37 +185,48 @@ export default function FarmWorkerDashboard() {
           <div className="text-center py-8">Loading dashboard data...</div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div
-                className="bg-white p-6 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setCurrentPage('batches')}
               >
                 <h3 className="text-lg font-medium text-gray-900">Active Batches</h3>
-                <p className="text-3xl font-bold text-blue-600 mt-2">{dashboardData.activeBatches}</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{dashboardData.activeBatches.count}</p>
+                <div className="mt-2 space-y-1">
+                  {Object.entries(dashboardData.activeBatches.breeds).slice(0, 2).map(([breed, count]) => (
+                    <div key={breed} className="flex justify-between text-xs text-gray-600">
+                      <span className="truncate mr-1">{breed}</span>
+                      <span>{count}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div
-                className="bg-white p-6 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => setCurrentPage('egg-collection')}
-              >
-                <h3 className="text-lg font-medium text-gray-900">Today's Egg Collection</h3>
-                <p className="text-3xl font-bold text-green-600 mt-2">{dashboardData.todaysEggCollection}</p>
-              </div>
-
-              <div
-                className="bg-white p-6 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setCurrentPage('mortality')}
               >
-                <h3 className="text-lg font-medium text-gray-900">Mortality Rate</h3>
-                <p className="text-3xl font-bold text-red-600 mt-2">{dashboardData.mortalityRate}%</p>
+                <h3 className="text-lg font-medium text-gray-900">Total Mortality</h3>
+                <p className="text-2xl font-bold text-red-600 mt-1">{dashboardData.totalMortality}</p>
+                <p className="text-xs text-gray-600 mt-1">birds lost</p>
               </div>
 
               <div
-                className="bg-white p-6 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setCurrentPage('houses')}
               >
                 <h3 className="text-lg font-medium text-gray-900">Available Houses</h3>
-                <p className="text-3xl font-bold text-purple-600 mt-2">{dashboardData.availableHouses}</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">{dashboardData.availableHouses.count}</p>
+                <div className="mt-2 space-y-1">
+                  {dashboardData.availableHouses.houses.slice(0, 2).map((house) => (
+                    <div key={house.name} className="text-xs text-gray-600">
+                      <div className="font-medium">{house.name}</div>
+                      <div className="text-xs">
+                        {house.batches.length > 0 ? `${house.batches.slice(0, 2).join(', ')}${house.batches.length > 2 ? '...' : ''}` : 'No batches'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
