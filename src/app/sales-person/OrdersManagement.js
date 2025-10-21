@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 export default function OrdersManagement() {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState({});
   const [orderItems, setOrderItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -62,79 +62,7 @@ export default function OrdersManagement() {
       const response = await fetch('/api/available-products');
       if (response.ok) {
         const data = await response.json();
-
-        // Flatten the available products into a simple array for the form
-        const availableProducts = [];
-
-        // Add eggs with quantity > 0
-        if (data.eggs?.by_product) {
-          data.eggs.by_product.forEach(egg => {
-            if (egg.quantity > 0) {
-              availableProducts.push({
-                id: `egg-${egg.product_name.replace(/\s+/g, '-').toLowerCase()}`,
-                product_name: egg.product_name,
-                available_quantity: egg.quantity,
-                current_price: egg.unit_price,
-                product_type: 'eggs',
-                breed: egg.breed,
-                type: egg.type
-              });
-            }
-          });
-        }
-
-        // Add chicks with quantity > 0
-        if (data.chicks?.by_product) {
-          data.chicks.by_product.forEach(chick => {
-            if (chick.quantity > 0) {
-              availableProducts.push({
-                id: `chick-${chick.product_name.replace(/\s+/g, '-').toLowerCase()}`,
-                product_name: chick.product_name,
-                available_quantity: chick.quantity,
-                current_price: chick.unit_price,
-                product_type: 'day_old_chicks',
-                breed: chick.breed,
-                type: chick.type
-              });
-            }
-          });
-        }
-
-        // Add meat with kg > 0
-        if (data.meat?.by_product) {
-          data.meat.by_product.forEach(meat => {
-            if (meat.kg > 0) {
-              availableProducts.push({
-                id: `meat-${meat.product_name.replace(/\s+/g, '-').toLowerCase()}`,
-                product_name: meat.product_name,
-                available_quantity: meat.kg,
-                current_price: meat.unit_price,
-                product_type: 'meat',
-                breed: meat.breed,
-                type: meat.type,
-                unit: 'kg'
-              });
-            }
-          });
-        }
-
-        // Add manure with kg > 0
-        if (data.manure?.by_product) {
-          data.manure.by_product.forEach(manure => {
-            if (manure.kg > 0) {
-              availableProducts.push({
-                id: `manure-${manure.product_name.replace(/\s+/g, '-').toLowerCase()}`,
-                product_name: manure.product_name,
-                available_quantity: manure.kg,
-                current_price: manure.unit_price,
-                product_type: 'manure',
-                unit: 'kg'
-              });
-            }
-          });
-        }
-
-        setProducts(availableProducts);
+        setProducts(data);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -154,8 +82,7 @@ export default function OrdersManagement() {
   };
 
   const addOrderItem = () => {
-    const selectedProduct = products.find(p => p.id === parseInt(formData.currentItem.product_id));
-    if (!selectedProduct || !formData.currentItem.quantity) {
+    if (!formData.currentItem.product_id || !formData.currentItem.quantity) {
       alert('Please select a product and enter quantity');
       return;
     }
@@ -166,12 +93,74 @@ export default function OrdersManagement() {
       return;
     }
 
+    // Find the selected product from the nested structure
+    let selectedProduct = null;
+    let productType = '';
+    let productKey = '';
+
+    // Check eggs
+    if (products.eggs?.by_product) {
+      selectedProduct = products.eggs.by_product.find(p =>
+        `egg-${p.product_name.replace(/\s+/g, '-').toLowerCase()}` === formData.currentItem.product_id
+      );
+      if (selectedProduct) {
+        productType = 'eggs';
+        productKey = 'quantity';
+      }
+    }
+
+    // Check chicks
+    if (!selectedProduct && products.chicks?.by_product) {
+      selectedProduct = products.chicks.by_product.find(p =>
+        `chick-${p.product_name.replace(/\s+/g, '-').toLowerCase()}` === formData.currentItem.product_id
+      );
+      if (selectedProduct) {
+        productType = 'chicks';
+        productKey = 'quantity';
+      }
+    }
+
+    // Check meat
+    if (!selectedProduct && products.meat?.by_product) {
+      selectedProduct = products.meat.by_product.find(p =>
+        `meat-${p.product_name.replace(/\s+/g, '-').toLowerCase()}` === formData.currentItem.product_id
+      );
+      if (selectedProduct) {
+        productType = 'meat';
+        productKey = 'kg';
+      }
+    }
+
+    // Check manure
+    if (!selectedProduct && products.manure?.by_product) {
+      selectedProduct = products.manure.by_product.find(p =>
+        `manure-${p.product_name.replace(/\s+/g, '-').toLowerCase()}` === formData.currentItem.product_id
+      );
+      if (selectedProduct) {
+        productType = 'manure';
+        productKey = 'kg';
+      }
+    }
+
+    if (!selectedProduct) {
+      alert('Selected product not found');
+      return;
+    }
+
+    // Check stock availability
+    const availableStock = selectedProduct[productKey];
+    if (quantity > availableStock) {
+      alert(`Insufficient stock. Available: ${availableStock} ${productKey === 'kg' ? 'kg' : 'units'}`);
+      return;
+    }
+
     const newItem = {
-      product_id: parseInt(formData.currentItem.product_id),
+      product_id: formData.currentItem.product_id,
       product_name: selectedProduct.product_name,
       quantity: quantity,
-      unit_price: parseFloat(selectedProduct.current_price || 0),
-      total_price: parseFloat(selectedProduct.current_price || 0) * quantity,
+      unit_price: parseFloat(selectedProduct.unit_price || 0),
+      total_price: parseFloat(selectedProduct.unit_price || 0) * quantity,
+      product_type: productType,
       batch_id: formData.currentItem.batch_id || null
     };
 
@@ -351,9 +340,28 @@ export default function OrdersManagement() {
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
                   >
                     <option value="">Select Product</option>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.product_name} - MWK {product.current_price}
+                    {/* Eggs */}
+                    {products.eggs?.by_product?.map((product) => (
+                      <option key={`egg-${product.product_name}`} value={`egg-${product.product_name.replace(/\s+/g, '-').toLowerCase()}`}>
+                        {product.product_name} - MWK {product.unit_price} (Available: {product.quantity})
+                      </option>
+                    ))}
+                    {/* Chicks */}
+                    {products.chicks?.by_product?.map((product) => (
+                      <option key={`chick-${product.product_name}`} value={`chick-${product.product_name.replace(/\s+/g, '-').toLowerCase()}`}>
+                        {product.product_name} - MWK {product.unit_price} (Available: {product.quantity})
+                      </option>
+                    ))}
+                    {/* Meat */}
+                    {products.meat?.by_product?.map((product) => (
+                      <option key={`meat-${product.product_name}`} value={`meat-${product.product_name.replace(/\s+/g, '-').toLowerCase()}`}>
+                        {product.product_name} - MWK {product.unit_price} (Available: {product.kg}kg)
+                      </option>
+                    ))}
+                    {/* Manure */}
+                    {products.manure?.by_product?.map((product) => (
+                      <option key={`manure-${product.product_name}`} value={`manure-${product.product_name.replace(/\s+/g, '-').toLowerCase()}`}>
+                        {product.product_name} - MWK {product.unit_price} (Available: {product.kg}kg)
                       </option>
                     ))}
                   </select>
