@@ -3,57 +3,63 @@ import pool from '../../../lib/db';
 
 export async function GET() {
   try {
-    // Eggs for sale: from products table where product_type = 'eggs'
+    // Eggs for sale: from egg_collections table
     const [eggsData] = await pool.execute(`
       SELECT
-        p.product_name,
-        p.available_quantity,
-        p.unit_price,
+        CONCAT(br.name, ' Eggs') as product_name,
+        ec.quantity as available_quantity,
+        0 as unit_price,
         br.name as breed_name,
         br.type as breed_type
-      FROM products p
-      LEFT JOIN breeds br ON p.breed_id = br.id
-      WHERE p.product_type = 'eggs' AND p.is_active = true
-      ORDER BY p.product_name
+      FROM egg_collections ec
+      LEFT JOIN batches b ON ec.batch_id = b.id
+      LEFT JOIN breeds br ON b.breed_id = br.id
+      WHERE ec.quantity > 0
+      ORDER BY br.name
     `);
 
-    // Live chicks: from products table where product_type = 'chicks'
+    // Live chicks: from active batches
     const [chicksData] = await pool.execute(`
       SELECT
-        p.product_name,
-        p.available_quantity,
-        p.unit_price,
+        CONCAT('Day Old ', br.name, ' Chicks') as product_name,
+        b.current_quantity as available_quantity,
+        0 as unit_price,
         br.name as breed_name,
         br.type as breed_type
-      FROM products p
-      LEFT JOIN breeds br ON p.breed_id = br.id
-      WHERE p.product_type = 'chicks' AND p.is_active = true
-      ORDER BY p.product_name
+      FROM batches b
+      LEFT JOIN breeds br ON b.breed_id = br.id
+      WHERE b.status = 'active' AND b.current_quantity > 0
+      ORDER BY br.name
     `);
 
-    // Meat: from products table where product_type = 'meat'
+    // Meat: from meat_production table
     const [meatData] = await pool.execute(`
       SELECT
-        p.product_name,
-        p.available_quantity,
-        p.unit_price,
+        CONCAT('Dressed ', br.name, ' Chicken') as product_name,
+        mp.quantity_kg as available_quantity,
+        0 as unit_price,
         br.name as breed_name,
         br.type as breed_type
-      FROM products p
-      LEFT JOIN breeds br ON p.breed_id = br.id
-      WHERE p.product_type = 'meat' AND p.is_active = true
-      ORDER BY p.product_name
+      FROM meat_production mp
+      LEFT JOIN batches b ON mp.batch_id = b.id
+      LEFT JOIN breeds br ON b.breed_id = br.id
+      WHERE mp.quantity_kg > 0
+      ORDER BY br.name
     `);
 
-    // Manure: from products table where product_type = 'manure'
+    // Manure: from manure_production table
     const [manureData] = await pool.execute(`
       SELECT
-        p.product_name,
-        p.available_quantity,
-        p.unit_price
-      FROM products p
-      WHERE p.product_type = 'manure' AND p.is_active = true
-      ORDER BY p.product_name
+        CONCAT(br.name, ' Manure') as product_name,
+        mp.quantity_kg as available_quantity,
+        0 as unit_price,
+        br.name as breed_name,
+        br.type as breed_type
+      FROM manure_production mp
+      LEFT JOIN batches b ON mp.batch_id = b.id
+      LEFT JOIN breeds br ON b.breed_id = br.id
+      WHERE mp.quantity_kg > 0
+      ORDER BY br.name
     `);
 
     // Structure the response - only include products with quantity > 0
@@ -100,6 +106,8 @@ export async function GET() {
           .filter(item => parseFloat(item.available_quantity || 0) > 0)
           .map(item => ({
             product_name: item.product_name,
+            breed: item.breed_name,
+            type: item.breed_type,
             kg: parseFloat(item.available_quantity || 0),
             unit_price: parseFloat(item.unit_price || 0)
           }))

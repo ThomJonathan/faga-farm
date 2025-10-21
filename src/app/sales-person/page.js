@@ -242,11 +242,18 @@ export default function SalesPersonDashboard() {
                       <p className="text-3xl font-extrabold text-amber-600">{dashboardData.availableProducts.manure.total_kg.toFixed(1)}kg</p>
                     </div>
                   </div>
-                  <div className="bg-amber-200 bg-opacity-50 rounded p-2 border border-amber-300">
-                    <div className="text-center">
-                      <span className="text-xs font-medium text-gray-700">Organic Fertilizer</span>
+                  {dashboardData.availableProducts.manure.by_product && dashboardData.availableProducts.manure.by_product.length > 0 && (
+                    <div className="space-y-1">
+                      {dashboardData.availableProducts.manure.by_product.map((product, idx) => (
+                        <div key={idx} className="bg-amber-200 bg-opacity-50 rounded p-2 border border-amber-300">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-gray-800 text-xs">{product.breed}</span>
+                            <span className="font-bold text-amber-700 text-sm">{product.kg.toFixed(1)}kg</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
