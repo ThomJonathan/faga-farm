@@ -222,8 +222,9 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
                 );
               } else {
                 return (
-                  <div
+                  <Link
                     key={item.name}
+                    href={item.href}
                     className={`block px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
                       isActive
                         ? 'bg-blue-100 text-blue-700'
@@ -238,14 +239,14 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
                         return;
                       }
                       if (role === 'farm_worker' && onPageChange) {
+                        e.preventDefault();
                         onPageChange(item.name.toLowerCase().replace(' ', '-'));
                         setSidebarOpen(false);
                       } else if (role === 'sales_person' && onPageChange) {
+                        e.preventDefault();
                         onPageChange(item.name.toLowerCase().replace(' ', ''));
                         setSidebarOpen(false);
                       } else {
-                        // For other roles, use Link behavior
-                        router.push(item.href);
                         setSidebarOpen(false);
                       }
                     }}
@@ -253,14 +254,14 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
                     <span className="mr-2">{item.icon}</span>
                     {item.name}
                     {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
-                  </div>
+                  </Link>
                 );
               }
             })}
             <div className="mt-4 border-t pt-4">
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="block w-full text-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md"
+                className="block w-full text-center px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
               >
                 Logout
               </button>
@@ -332,8 +333,9 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
                 );
               } else {
                 return (
-                  <div
+                  <Link
                     key={item.name}
+                    href={item.href}
                     className={`block px-3 py-2 rounded-md text-sm font-medium mb-1 cursor-pointer ${
                       isActive
                         ? 'bg-blue-100 text-blue-700'
@@ -348,17 +350,17 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
                         return;
                       }
                       if (role === 'sales_person' && onPageChange) {
+                        e.preventDefault();
                         onPageChange(item.name.toLowerCase().replace(' ', ''));
                       } else {
                         // For other roles, use Link behavior
-                        router.push(item.href);
                       }
                     }}
                   >
                     <span className="mr-2">{item.icon}</span>
                     {item.name}
                     {item.comingSoon && <span className="ml-2 text-xs">(Soon)</span>}
-                  </div>
+                  </Link>
                 );
               }
             })}
@@ -366,7 +368,7 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
           <div className="p-4 border-t">
             <button
               onClick={() => setShowLogoutModal(true)}
-              className="block w-full text-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md"
+              className="block w-full text-center px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
             >
               Logout
             </button>
@@ -376,13 +378,7 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black bg-opacity-50"
-            onClick={() => setShowLogoutModal(false)}
-          />
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
           {/* Modal */}
           <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <div className="text-center">
