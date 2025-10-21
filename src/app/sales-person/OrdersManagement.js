@@ -281,7 +281,7 @@ export default function OrdersManagement() {
                     <option value="">Select Product</option>
                     {products.map((product) => (
                       <option key={product.id} value={product.id}>
-                        {product.product_name} - ${product.current_price}
+                        {product.product_name} - MWK {product.current_price}
                       </option>
                     ))}
                   </select>
@@ -328,8 +328,8 @@ export default function OrdersManagement() {
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.product_name}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.unit_price.toFixed(2)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.total_price.toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">MWK {item.unit_price.toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">MWK {item.total_price.toFixed(2)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <button
                               type="button"
@@ -344,7 +344,7 @@ export default function OrdersManagement() {
                       <tr className="bg-gray-50">
                         <td colSpan="3" className="px-6 py-4 text-right font-medium">Total Amount:</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${parseFloat(formData.total_amount).toFixed(2)}
+                          MWK {parseFloat(formData.total_amount).toFixed(2)}
                         </td>
                         <td></td>
                       </tr>
@@ -457,7 +457,7 @@ export default function OrdersManagement() {
                         {new Date(order.order_date).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        ${parseFloat(order.total_amount).toFixed(2)}
+                        MWK {parseFloat(order.total_amount).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
@@ -515,10 +515,10 @@ export default function OrdersManagement() {
                         {item.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${parseFloat(item.unit_price).toFixed(2)}
+                        MWK {parseFloat(item.unit_price).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        ${parseFloat(item.total_price).toFixed(2)}
+                        MWK {parseFloat(item.total_price).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {item.batch_number || '-'}

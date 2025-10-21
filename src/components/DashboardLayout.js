@@ -67,8 +67,9 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
       { name: 'Dashboard', href: '/manager', icon: '🏠' },
       { name: 'Inventory Management', href: '/manager/inventory', icon: '📦' },
       { name: 'Expenses', href: '/manager/expenses', icon: '💰' },
+      { name: 'Product Price', href: '/manager/product-price', icon: '💵' },
+      { name: 'Performance', href: '/manager/performance', icon: '📈' },
       { name: 'Reports', href: '/manager/reports', icon: '📊' },
-      { name: 'Users', href: '/manager/users', icon: '👤' },
     ],
   };
 

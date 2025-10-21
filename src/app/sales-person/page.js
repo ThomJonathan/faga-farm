@@ -91,20 +91,13 @@ export default function SalesPersonDashboard() {
           .filter(sale => sale.sale_date.startsWith(currentMonth))
           .reduce((sum, sale) => sum + parseFloat(sale.total_price || 0), 0);
 
-        // Calculate available products
-        const availableProducts = {
-          eggs: eggCollections.records
-            .filter(record => record.egg_type === 'sales')
-            .reduce((sum, record) => sum + record.quantity, 0),
-          chicks: batches
-            .filter(batch => batch.level === 'chick' && batch.status === 'active')
-            .reduce((sum, batch) => sum + batch.current_quantity, 0),
-          meat: batches
-            .filter(batch => batch.level === 'adult' && batch.status === 'active')
-            .reduce((sum, batch) => sum + batch.current_quantity, 0),
-          manure: batches
-            .filter(batch => batch.status === 'active')
-            .reduce((sum, batch) => sum + batch.current_quantity, 0) * 0.5 // Assuming 0.5kg manure per bird per day
+        // Fetch available products from the new API
+        const availableProductsRes = await fetch('/api/available-products').catch(() => ({ ok: false }));
+        const availableProducts = availableProductsRes.ok ? await availableProductsRes.json() : {
+          eggs: { total: 0, by_breed: [] },
+          chicks: { total: 0, by_breed_and_age: [] },
+          meat: { total_kg: 0, total_birds: 0, by_breed: [] },
+          manure: { total_kg: 0 }
         };
 
         setDashboardData({
@@ -164,52 +157,100 @@ export default function SalesPersonDashboard() {
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Available Products</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Products</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold mr-3">
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border-2 border-yellow-200 shadow-md hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold text-lg mr-3 shadow-sm">
                       🥚
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Eggs</p>
-                      <p className="text-lg font-bold text-yellow-600">{dashboardData.availableProducts.eggs}</p>
+                      <p className="text-base font-bold text-gray-900">Eggs</p>
+                      <p className="text-2xl font-extrabold text-yellow-600">{dashboardData.availableProducts.eggs.total}</p>
                     </div>
                   </div>
+                  {dashboardData.availableProducts.eggs.by_breed.length > 0 && (
+                    <div className="space-y-1">
+                      {dashboardData.availableProducts.eggs.by_breed.map((breed, idx) => (
+                        <div key={idx} className="bg-yellow-200 bg-opacity-50 rounded p-2 border border-yellow-300">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-gray-800 text-xs">{breed.breed}</span>
+                            <span className="font-bold text-yellow-700 text-sm">{breed.quantity}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold mr-3">
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border-2 border-orange-200 shadow-md hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg mr-3 shadow-sm">
                       🐔
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Chicks</p>
-                      <p className="text-lg font-bold text-orange-600">{dashboardData.availableProducts.chicks}</p>
+                      <p className="text-base font-bold text-gray-900">Chicks</p>
+                      <p className="text-2xl font-extrabold text-orange-600">{dashboardData.availableProducts.chicks.total}</p>
                     </div>
                   </div>
+                  {dashboardData.availableProducts.chicks.by_breed_and_age.length > 0 && (
+                    <div className="space-y-1">
+                      {dashboardData.availableProducts.chicks.by_breed_and_age.map((item, idx) => (
+                        <div key={idx} className="bg-orange-200 bg-opacity-50 rounded p-2 border border-orange-300">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-gray-800 text-xs">{item.breed}</span>
+                            <span className="font-bold text-orange-700 text-sm">{item.quantity}</span>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {item.age_weeks === 0 ? `${item.age_days} days old` : `${item.age_weeks} weeks old`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center text-white font-bold mr-3">
+                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border-2 border-red-200 shadow-md hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-lg mr-3 shadow-sm">
                       🍗
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Meat</p>
-                      <p className="text-lg font-bold text-red-600">{dashboardData.availableProducts.meat}</p>
+                      <p className="text-base font-bold text-gray-900">Meat</p>
+                      <p className="text-2xl font-extrabold text-red-600">{dashboardData.availableProducts.meat.total_kg.toFixed(1)}kg</p>
+                      <p className="text-xs text-gray-600">{dashboardData.availableProducts.meat.total_birds} birds</p>
                     </div>
                   </div>
+                  {dashboardData.availableProducts.meat.by_breed.length > 0 && (
+                    <div className="space-y-1">
+                      {dashboardData.availableProducts.meat.by_breed.map((breed, idx) => (
+                        <div key={idx} className="bg-red-200 bg-opacity-50 rounded p-2 border border-red-300">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-gray-800 text-xs">{breed.breed}</span>
+                            <span className="font-bold text-red-700 text-sm">{breed.kg.toFixed(1)}kg</span>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {breed.birds} birds
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-brown-50 p-4 rounded-lg border border-brown-200">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold mr-3">
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-lg border-2 border-amber-200 shadow-md hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-lg mr-3 shadow-sm">
                       💩
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Manure</p>
-                      <p className="text-lg font-bold text-amber-600">{dashboardData.availableProducts.manure.toFixed(1)}kg</p>
+                      <p className="text-base font-bold text-gray-900">Manure</p>
+                      <p className="text-3xl font-extrabold text-amber-600">{dashboardData.availableProducts.manure.total_kg.toFixed(1)}kg</p>
+                    </div>
+                  </div>
+                  <div className="bg-amber-200 bg-opacity-50 rounded p-2 border border-amber-300">
+                    <div className="text-center">
+                      <span className="text-xs font-medium text-gray-700">Organic Fertilizer</span>
                     </div>
                   </div>
                 </div>

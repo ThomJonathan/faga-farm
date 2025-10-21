@@ -118,29 +118,28 @@ export default function ExpenseManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Expense Management</h1>
+    <div className="space-y-3">
+      <div className="flex justify-end items-center">
         <button
           onClick={() => setShowAddForm(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          className="bg-red-600 text-white px-3 py-1.5 text-sm rounded-lg hover:bg-red-700 transition-colors"
         >
           Record Expense
         </button>
       </div>
 
       {showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Record Expense</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Record Expense</h2>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Expense Type</label>
+                <label className="block text-xs font-medium text-gray-700">Expense Type</label>
                 <select
                   required
                   value={formData.expense_type}
                   onChange={(e) => setFormData({ ...formData, expense_type: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-1.5 text-sm text-gray-900"
                 >
                   <option value="">Select Expense Type</option>
                   <option value="vaccination">Vaccination</option>
@@ -154,7 +153,7 @@ export default function ExpenseManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Amount ($)</label>
+                <label className="block text-xs font-medium text-gray-700">Amount (MWK)</label>
                 <input
                   type="number"
                   required
@@ -162,53 +161,53 @@ export default function ExpenseManagement() {
                   step="0.01"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-1.5 text-sm text-gray-900"
                   placeholder="Enter expense amount"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Expense Date</label>
+                <label className="block text-xs font-medium text-gray-700">Expense Date</label>
                 <input
                   type="date"
                   required
                   value={formData.expense_date}
                   onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-1.5 text-sm text-gray-900"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <label className="block text-xs font-medium text-gray-700">Category</label>
                 <input
                   type="text"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-1.5 text-sm text-gray-900"
                   placeholder="Optional category"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label className="block text-xs font-medium text-gray-700">Description</label>
                 <textarea
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
-                  rows="3"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-1.5 text-sm text-gray-900"
+                  rows="2"
                   placeholder="Detailed description of the expense"
                 />
               </div>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2">
               <button
                 type="submit"
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                className="bg-red-600 text-white px-3 py-1.5 text-sm rounded-lg hover:bg-red-700 transition-colors"
               >
                 Record Expense
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                className="bg-gray-600 text-white px-3 py-1.5 text-sm rounded-lg hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
@@ -219,31 +218,31 @@ export default function ExpenseManagement() {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Total Expenses</h3>
-            <p className="text-3xl font-bold text-red-600 mt-2">${summary.total_expenses.toFixed(2)}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white p-3 rounded-lg shadow">
+            <h3 className="text-xs font-medium text-gray-900">Total Expenses</h3>
+            <p className="text-lg font-bold text-red-600 mt-1">MWK {summary.total_expenses.toFixed(2)}</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Expense Records</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{summary.total_records}</p>
+          <div className="bg-white p-3 rounded-lg shadow">
+            <h3 className="text-xs font-medium text-gray-900">Records</h3>
+            <p className="text-lg font-bold text-blue-600 mt-1">{summary.total_records}</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Top Category</h3>
-            <p className="text-lg font-bold text-green-600 mt-2 capitalize">
+          <div className="bg-white p-3 rounded-lg shadow">
+            <h3 className="text-xs font-medium text-gray-900">Top Category</h3>
+            <p className="text-sm font-bold text-green-600 mt-1 capitalize">
               {Object.entries(summary.category_totals).sort(([,a], [,b]) => b - a)[0]?.[0] || 'None'}
             </p>
-            <p className="text-sm text-gray-500">
-              ${Object.entries(summary.category_totals).sort(([,a], [,b]) => b - a)[0]?.[1]?.toFixed(2) || '0.00'}
+            <p className="text-xs text-gray-500">
+              MWK {Object.entries(summary.category_totals).sort(([,a], [,b]) => b - a)[0]?.[1]?.toFixed(2) || '0.00'}
             </p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Categories</h3>
-            <div className="mt-2 space-y-1 max-h-20 overflow-y-auto">
-              {Object.entries(summary.category_totals).slice(0, 3).map(([category, amount]) => (
-                <div key={category} className="flex justify-between text-sm">
+          <div className="bg-white p-3 rounded-lg shadow">
+            <h3 className="text-xs font-medium text-gray-900">Categories</h3>
+            <div className="mt-1 space-y-1 max-h-12 overflow-y-auto">
+              {Object.entries(summary.category_totals).slice(0, 2).map(([category, amount]) => (
+                <div key={category} className="flex justify-between text-xs">
                   <span className="capitalize">{category}:</span>
-                  <span className="font-semibold">${amount.toFixed(2)}</span>
+                  <span className="font-semibold">MWK {amount.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -252,31 +251,31 @@ export default function ExpenseManagement() {
       )}
 
       <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Expense Records</h2>
+        <div className="px-4 py-3 border-b border-gray-200">
+          <h2 className="text-base font-medium text-gray-900">Expense Records</h2>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="p-6 text-center">Loading expense records...</div>
+            <div className="p-4 text-center">Loading expense records...</div>
           ) : expenses.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">No expense records found</div>
+            <div className="p-4 text-center text-gray-500">No expense records found</div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Description
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Category
                   </th>
                 </tr>
@@ -284,21 +283,21 @@ export default function ExpenseManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {expenses.map((expense) => (
                   <tr key={expense.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                       {new Date(expense.expense_date).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getExpenseTypeColor(expense.expense_type)}`}>
                         {expense.expense_type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
                       {expense.description}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${parseFloat(expense.amount).toFixed(2)}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      MWK {parseFloat(expense.amount).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                       {expense.category || '-'}
                     </td>
                   </tr>

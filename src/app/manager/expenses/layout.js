@@ -1,9 +1,8 @@
 import DashboardLayout from '../../../components/DashboardLayout';
 import auth from '../../../lib/auth';
 import { redirect } from 'next/navigation';
-import ReportsManagement from '../ReportsManagement';
 
-export default async function ReportsPage() {
+export default async function ExpensesLayout({ children }) {
   const user = await auth.getUserSession();
   if (!user) {
     redirect('/login');
@@ -12,8 +11,7 @@ export default async function ReportsPage() {
   return (
     <DashboardLayout role="manager" user={user}>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <ReportsManagement />
+        {children}
       </div>
     </DashboardLayout>
   );
