@@ -9,9 +9,10 @@ export async function GET(request) {
     const endDate = searchParams.get('end_date');
 
     let query = `
-      SELECT t.*, b.batch_name, u.name as administered_by_name
+      SELECT t.*, b.batch_number, br.name as breed_name, b.level, b.current_quantity, u.name as administered_by_name
       FROM treatments t
       LEFT JOIN batches b ON t.batch_id = b.id
+      LEFT JOIN breeds br ON b.breed_id = br.id
       LEFT JOIN users u ON t.administered_by = u.id
     `;
 
@@ -131,7 +132,7 @@ export async function POST(request) {
         total_cost,
         treatment_date,
         result.insertId,
-        administered_by
+        administered_by || null
       ]);
     }
 

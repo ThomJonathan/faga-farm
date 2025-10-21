@@ -10,7 +10,7 @@ import EggCollectionManagement from './EggCollectionManagement';
 import MortalityManagement from './MortalityManagement';
 import VaccinationManagement from './VaccinationManagement';
 import TreatmentManagement from './TreatmentManagement';
-import ExpenseManagement from './ExpenseManagement';
+
 import ManureProductionManagement from './ManureProductionManagement';
 import MeatProductionManagement from './MeatProductionManagement';
 
@@ -51,8 +51,7 @@ export default function FarmWorkerDashboard() {
         return <VaccinationManagement />;
       case 'treatments':
         return <TreatmentManagement />;
-      case 'expenses':
-        return <ExpenseManagement />;
+
       case 'manure-production':
         return <ManureProductionManagement />;
       case 'meat-production':

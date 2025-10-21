@@ -35,7 +35,7 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
       { name: 'Mortality', href: '/farm-worker/mortality', icon: '💀' },
       { name: 'Vaccinations', href: '/farm-worker/vaccinations', icon: '💉' },
       { name: 'Treatments', href: '/farm-worker/treatments', icon: '🩺' },
-      { name: 'Expenses', href: '/farm-worker/expenses', icon: '💰' },
+
       { name: 'Manure Production', href: '/farm-worker/manure-production', icon: '💩' },
       { name: 'Meat Production', href: '/farm-worker/meat-production', icon: '🥩' },
     ],
@@ -48,6 +48,7 @@ export default function DashboardLayout({ children, role, user, currentPage, onP
     manager: [
       { name: 'Dashboard', href: '/manager', icon: '🏠' },
       { name: 'Inventory Management', href: '/manager/inventory', icon: '📦' },
+      { name: 'Expenses', href: '/manager/expenses', icon: '💰' },
       { name: 'Reports', href: '/manager/reports', icon: '📊' },
       { name: 'Users', href: '/manager/users', icon: '👤' },
     ],

@@ -9,9 +9,10 @@ export async function GET(request) {
     const endDate = searchParams.get('end_date');
 
     let query = `
-      SELECT v.*, b.batch_name, u.name as administered_by_name
+      SELECT v.*, b.batch_number, b.level, br.name as breed_name, u.name as administered_by_name
       FROM vaccinations v
       LEFT JOIN batches b ON v.batch_id = b.id
+      LEFT JOIN breeds br ON b.breed_id = br.id
       LEFT JOIN users u ON v.administered_by = u.id
     `;
 
@@ -127,7 +128,7 @@ export async function POST(request) {
         total_cost,
         vaccination_date,
         result.insertId,
-        administered_by
+        administered_by || null
       ]);
     }
 

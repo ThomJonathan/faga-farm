@@ -44,8 +44,8 @@ export default function VaccinationManagement() {
       const response = await fetch('/api/batches');
       if (response.ok) {
         const data = await response.json();
-        // Only show active batches, especially chicks that need vaccination
-        setBatches(data.filter(batch => batch.status === 'active'));
+        // Only show active batches that are chicks (level = 'chick')
+        setBatches(data.filter(batch => batch.status === 'active' && batch.level === 'chick'));
       }
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -54,14 +54,8 @@ export default function VaccinationManagement() {
 
   const calculateSummary = (vaccinationData) => {
     const totalVaccinations = vaccinationData.length;
-    const totalCost = vaccinationData.reduce((sum, v) => sum + (v.total_cost || 0), 0);
-    const upcomingVaccinations = vaccinationData.filter(v => {
-      if (!v.next_due_date) return false;
-      const dueDate = new Date(v.next_due_date);
-      const today = new Date();
-      const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-      return daysUntilDue <= 7 && daysUntilDue >= 0;
-    }).length;
+    const totalCost = vaccinationData.reduce((sum, v) => sum + (parseFloat(v.total_cost) || 0), 0);
+    const upcomingVaccinations = vaccinationData.filter(v => v.next_due_date !== null).length;
 
     setSummary({
       total_vaccinations: totalVaccinations,
@@ -73,13 +67,15 @@ export default function VaccinationManagement() {
   const calculateTotalCost = () => {
     const costPerUnit = parseFloat(formData.cost_per_unit) || 0;
     const dosage = parseFloat(formData.dosage) || 0;
-    const totalCost = costPerUnit * dosage;
+    const selectedBatch = batches.find(batch => batch.id === parseInt(formData.batch_id));
+    const birdCount = selectedBatch ? selectedBatch.current_quantity : 0;
+    const totalCost = costPerUnit * dosage * birdCount;
     setFormData(prev => ({ ...prev, total_cost: totalCost.toFixed(2) }));
   };
 
   useEffect(() => {
     calculateTotalCost();
-  }, [formData.cost_per_unit, formData.dosage]);
+  }, [formData.cost_per_unit, formData.dosage, formData.batch_id, batches]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -159,7 +155,6 @@ export default function VaccinationManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Vaccination Management</h1>
         <button
           onClick={() => setShowAddForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -222,7 +217,7 @@ export default function VaccinationManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Cost per Unit ($)</label>
+                <label className="block text-sm font-medium text-gray-700">Cost per Unit (MWK)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -233,7 +228,7 @@ export default function VaccinationManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Total Cost ($)</label>
+                <label className="block text-sm font-medium text-gray-700">Total Cost (MWK)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -291,7 +286,7 @@ export default function VaccinationManagement() {
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Total Cost</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">${summary.total_cost.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-green-600 mt-2">MWK {summary.total_cost.toFixed(2)}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Upcoming Vaccinations</h3>
@@ -356,7 +351,7 @@ export default function VaccinationManagement() {
                       {vaccination.dosage || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${vaccination.total_cost || 0}
+                      MWK {vaccination.total_cost || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {vaccination.next_due_date ? new Date(vaccination.next_due_date).toLocaleDateString() : '-'}

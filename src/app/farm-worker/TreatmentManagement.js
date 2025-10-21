@@ -56,7 +56,7 @@ export default function TreatmentManagement() {
 
   const calculateSummary = (treatmentData) => {
     const totalTreatments = treatmentData.length;
-    const totalCost = treatmentData.reduce((sum, t) => sum + (t.total_cost || 0), 0);
+    const totalCost = treatmentData.reduce((sum, t) => sum + (parseFloat(t.total_cost) || 0), 0);
     const upcomingTreatments = treatmentData.filter(t => {
       if (!t.next_due_date) return false;
       const dueDate = new Date(t.next_due_date);
@@ -181,7 +181,6 @@ export default function TreatmentManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Treatment Management</h1>
         <button
           onClick={() => setShowAddForm(true)}
           className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
@@ -258,7 +257,7 @@ export default function TreatmentManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Cost per Unit ($)</label>
+                <label className="block text-sm font-medium text-gray-700">Cost per Unit (MWK)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -269,7 +268,7 @@ export default function TreatmentManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Total Cost ($)</label>
+                <label className="block text-sm font-medium text-gray-700">Total Cost (MWK)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -340,7 +339,7 @@ export default function TreatmentManagement() {
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Total Cost</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">${summary.total_cost.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-green-600 mt-2">MWK {summary.total_cost.toFixed(2)}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Upcoming Treatments</h3>
@@ -348,7 +347,7 @@ export default function TreatmentManagement() {
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Effectiveness</h3>
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 space-y-1 text-gray-900">
               {Object.entries(summary.effectiveness).map(([rating, count]) => (
                 <div key={rating} className="flex justify-between text-sm">
                   <span className="capitalize">{rating}:</span>
@@ -424,7 +423,7 @@ export default function TreatmentManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${treatment.total_cost || 0}
+                      MWK {treatment.total_cost || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {treatment.next_due_date ? new Date(treatment.next_due_date).toLocaleDateString() : '-'}
