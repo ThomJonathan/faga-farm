@@ -5,22 +5,27 @@ import { useState, useEffect } from 'react';
 export default function EggIncubationManagement() {
   const [incubations, setIncubations] = useState([]);
   const [incubators, setIncubators] = useState([]);
+  const [eggCollections, setEggCollections] = useState([]);
   const [breeds, setBreeds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showHatchForm, setShowHatchForm] = useState(false);
+  const [selectedIncubation, setSelectedIncubation] = useState(null);
   const [summary, setSummary] = useState(null);
   const [formData, setFormData] = useState({
     egg_batch_name: '',
-    breed_id: '',
+    collection_id: '',
     incubator_id: '',
     start_date: new Date().toISOString().split('T')[0],
     number_of_eggs: '',
     notes: ''
   });
+  const [hatchedChicks, setHatchedChicks] = useState(0);
 
   useEffect(() => {
     fetchIncubations();
     fetchIncubators();
+    fetchEggCollections();
     fetchBreeds();
   }, []);
 
@@ -51,6 +56,19 @@ export default function EggIncubationManagement() {
     }
   };
 
+  const fetchEggCollections = async () => {
+    try {
+      const response = await fetch('/api/egg-collection');
+      if (response.ok) {
+        const data = await response.json();
+        // Filter for incubation type collections
+        setEggCollections(data.records.filter(collection => collection.egg_type === 'incubation'));
+      }
+    } catch (error) {
+      console.error('Error fetching egg collections:', error);
+    }
+  };
+
   const fetchBreeds = async () => {
     try {
       const response = await fetch('/api/breeds');
@@ -76,11 +94,12 @@ export default function EggIncubationManagement() {
 
       if (response.ok) {
         fetchIncubations();
-        fetchIncubators(); // Refresh incubator capacities
+        fetchIncubators();
+        fetchEggCollections(); // Refresh egg collections after incubation starts
         setShowAddForm(false);
         setFormData({
           egg_batch_name: '',
-          breed_id: '',
+          collection_id: '',
           incubator_id: '',
           start_date: new Date().toISOString().split('T')[0],
           number_of_eggs: '',
@@ -95,11 +114,57 @@ export default function EggIncubationManagement() {
     }
   };
 
+  const handleHatch = async (incubationId, hatchData) => {
+    try {
+      const response = await fetch('/api/egg-incubation', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: incubationId,
+          ...hatchData
+        }),
+      });
+
+      if (response.ok) {
+        fetchIncubations();
+        fetchIncubators(); // Refresh incubator capacities
+        setShowHatchForm(false);
+        setSelectedIncubation(null);
+        setHatchedChicks(0);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message);
+      }
+    } catch (error) {
+      console.error('Error recording hatch:', error);
+    }
+  };
+
+  const handleCreateBatchFromHatchedChicks = async (incubation) => {
+    // Navigate to batch creation with pre-filled data
+    const batchData = {
+      breed_id: incubation.breed_id,
+      date_produced: new Date().toISOString().split('T')[0],
+      initial_quantity: incubation.hatched_chicks,
+      level: 'chick',
+      notes: `Hatched from incubation batch: ${incubation.egg_batch_name}`,
+      incubation_id: incubation.id // Track which incubation this batch came from
+    };
+
+    // Store in sessionStorage for the batch creation form
+    sessionStorage.setItem('newBatchData', JSON.stringify(batchData));
+
+    // Navigate to batches page
+    window.location.href = '/farm-worker/batches';
+  };
+
   const resetForm = () => {
     setShowAddForm(false);
     setFormData({
       egg_batch_name: '',
-      breed_id: '',
+      collection_id: '',
       incubator_id: '',
       start_date: new Date().toISOString().split('T')[0],
       number_of_eggs: '',
@@ -124,6 +189,23 @@ export default function EggIncubationManagement() {
   const getHatchDays = (breedId) => {
     const breed = breeds.find(b => b.id === breedId);
     return breed && breed.type === 'chicken' ? 21 : breed && breed.type === 'quail' ? 18 : 0;
+  };
+
+  const getDaysRemaining = (startDate, breedId) => {
+    const hatchDays = getHatchDays(breedId);
+    if (hatchDays === 0) return null;
+
+    const start = new Date(startDate);
+    const today = new Date();
+    const daysPassed = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+    const daysRemaining = hatchDays - daysPassed;
+
+    return daysRemaining;
+  };
+
+  const getCollectionInfo = (collectionId) => {
+    const collection = eggCollections.find(c => c.id === collectionId);
+    return collection ? `${collection.batch_number} - ${collection.breed_name}` : 'Unknown';
   };
 
   return (
@@ -155,17 +237,17 @@ export default function EggIncubationManagement() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Breed</label>
+                <label className="block text-sm font-medium text-gray-700">Egg Collection</label>
                 <select
                   required
-                  value={formData.breed_id}
-                  onChange={(e) => setFormData({ ...formData, breed_id: e.target.value })}
+                  value={formData.collection_id}
+                  onChange={(e) => setFormData({ ...formData, collection_id: e.target.value })}
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
                 >
-                  <option value="">Select Breed</option>
-                  {breeds.map((breed) => (
-                    <option key={breed.id} value={breed.id}>
-                      {breed.name} ({breed.type}) - {breed.purpose}
+                  <option value="">Select Egg Collection</option>
+                  {eggCollections.map((collection) => (
+                    <option key={collection.id} value={collection.id}>
+                      {collection.batch_number} - {collection.breed_name} ({collection.quantity} eggs available)
                     </option>
                   ))}
                 </select>
@@ -238,12 +320,142 @@ export default function EggIncubationManagement() {
         </div>
       )}
 
+      {/* Active Incubations Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {incubations.filter(inc => inc.status !== 'hatched').map((incubation) => (
+          <div key={incubation.id} className="bg-white p-6 rounded-lg shadow">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">{incubation.egg_batch_name}</h3>
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(incubation.status)}`}>
+                {incubation.status}
+              </span>
+            </div>
+
+            <div className="space-y-2 text-sm text-gray-600">
+              <p><strong>Collection:</strong> {getCollectionInfo(incubation.collection_id)}</p>
+              <p><strong>Incubator:</strong> {incubation.incubator_name}</p>
+              <p><strong>Eggs:</strong> {incubation.number_of_eggs}</p>
+              <p><strong>Start Date:</strong> {new Date(incubation.start_date).toLocaleDateString()}</p>
+
+              {(() => {
+                const daysRemaining = getDaysRemaining(incubation.start_date, incubation.breed_id);
+                return daysRemaining !== null ? (
+                  <p className={daysRemaining <= 0 ? 'text-red-600 font-semibold' : daysRemaining <= 3 ? 'text-orange-600 font-semibold' : ''}>
+                    <strong>Days to Hatch:</strong> {daysRemaining <= 0 ? 'Overdue' : daysRemaining}
+                  </p>
+                ) : null;
+              })()}
+            </div>
+
+            {incubation.status !== 'hatched' && (
+              <button
+                onClick={() => {
+                  setSelectedIncubation(incubation);
+                  setShowHatchForm(true);
+                  setHatchedChicks(0);
+                }}
+                className="mt-4 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Record Hatch
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Hatch Form Modal */}
+      {showHatchForm && selectedIncubation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Record Hatch - {selectedIncubation.egg_batch_name}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Total eggs: {selectedIncubation.number_of_eggs}
+              </p>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const unhatchedChicks = selectedIncubation.number_of_eggs - hatchedChicks;
+
+              handleHatch(selectedIncubation.id, {
+                hatch_date: e.target.hatch_date.value,
+                hatched_chicks: hatchedChicks,
+                unhatched_chicks: unhatchedChicks,
+                notes: e.target.notes.value
+              });
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Hatch Date</label>
+                  <input
+                    type="date"
+                    name="hatch_date"
+                    required
+                    defaultValue={new Date().toISOString().split('T')[0]}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Hatched Chicks</label>
+                  <input
+                    type="number"
+                    name="hatched_chicks"
+                    required
+                    min="0"
+                    max={selectedIncubation.number_of_eggs}
+                    value={hatchedChicks}
+                    onChange={(e) => setHatchedChicks(parseInt(e.target.value) || 0)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                    placeholder="Enter number of hatched chicks"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Unhatched eggs: {selectedIncubation.number_of_eggs - hatchedChicks}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                  <textarea
+                    name="notes"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-900"
+                    rows="3"
+                    placeholder="Optional notes about the hatch"
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-3 mt-6">
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Record Hatch
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHatchForm(false);
+                    setSelectedIncubation(null);
+                    setHatchedChicks(0);
+                  }}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Total Batches</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{summary.total_batches}</p>
+            <h3 className="text-lg font-medium text-gray-900">Active Incubations</h3>
+            <p className="text-3xl font-bold text-blue-600 mt-2">
+              {incubations.filter(inc => inc.status !== 'hatched').length}
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-lg font-medium text-gray-900">Total Eggs</h3>
@@ -253,16 +465,12 @@ export default function EggIncubationManagement() {
             <h3 className="text-lg font-medium text-gray-900">Hatched Chicks</h3>
             <p className="text-3xl font-bold text-purple-600 mt-2">{summary.total_hatched}</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900">Avg Hatch Rate</h3>
-            <p className="text-3xl font-bold text-orange-600 mt-2">{summary.avg_hatch_rate}%</p>
-          </div>
         </div>
       )}
 
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Egg Incubations</h2>
+          <h2 className="text-lg font-medium text-gray-900">Incubation History</h2>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
@@ -277,7 +485,7 @@ export default function EggIncubationManagement() {
                     Batch Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Breed
+                    Collection
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Incubator
@@ -309,11 +517,7 @@ export default function EggIncubationManagement() {
                       {incubation.egg_batch_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {incubation.breed_name}
-                      <br />
-                      <span className="text-xs text-gray-400">
-                        {getBreedType(incubation.breed_id)} - {getHatchDays(incubation.breed_id)} days
-                      </span>
+                      {getCollectionInfo(incubation.collection_id)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {incubation.incubator_name}

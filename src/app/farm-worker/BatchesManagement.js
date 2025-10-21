@@ -24,6 +24,24 @@ export default function BatchesManagement() {
     fetchBatches();
     fetchBreeds();
     fetchHouses();
+
+    // Check for pre-filled data from incubation
+    const newBatchData = sessionStorage.getItem('newBatchData');
+    if (newBatchData) {
+      const batchData = JSON.parse(newBatchData);
+      setFormData({
+        breed_id: batchData.breed_id || '',
+        house_id: '',
+        date_produced: batchData.date_produced || '',
+        initial_quantity: batchData.initial_quantity || '',
+        current_quantity: batchData.initial_quantity || '',
+        dead_count: 0,
+        level: batchData.level || 'chick',
+        status: 'active'
+      });
+      setShowAddForm(true);
+      sessionStorage.removeItem('newBatchData'); // Clear the data
+    }
   }, []);
 
   const fetchBatches = async () => {

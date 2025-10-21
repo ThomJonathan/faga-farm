@@ -69,6 +69,7 @@ export default function FarmWorkerDashboard() {
       activeBatches: [],
       todaysEggCollection: [],
       totalMortality: 0,
+      totalBirds: 0,
       availableHouses: [],
       recentActivities: []
     });
@@ -135,6 +136,9 @@ export default function FarmWorkerDashboard() {
           houseBatches[house].push(batch.batch_number);
         });
 
+        // Calculate total birds (sum of all active batch quantities)
+        const totalBirds = activeBatches.reduce((sum, batch) => sum + (batch.initial_quantity || 0), 0);
+
         // Get recent activities (last 5 records from different sources)
         const activities = [
           ...eggCollections.records.slice(0, 3).map(record => ({
@@ -161,6 +165,7 @@ export default function FarmWorkerDashboard() {
             batches: todaysBatches
           },
           totalMortality,
+          totalBirds,
           availableHouses: {
             count: availableHousesCount,
             houses: availableHouses.slice(0, 3).map(house => ({
@@ -206,9 +211,12 @@ export default function FarmWorkerDashboard() {
                 className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
                 onClick={() => setCurrentPage('mortality')}
               >
-                <h3 className="text-lg font-medium text-gray-900">Total Mortality</h3>
-                <p className="text-2xl font-bold text-red-600 mt-1">{dashboardData.totalMortality}</p>
-                <p className="text-xs text-gray-600 mt-1">birds lost</p>
+                <h3 className="text-lg font-medium text-gray-900">Birds</h3>
+                <p className="text-2xl font-bold text-green-600 mt-1">{dashboardData.totalBirds}</p>
+                <p className="text-xs text-gray-600 mt-1">total birds</p>
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className="text-sm font-medium text-red-600">{dashboardData.totalMortality} mortality</p>
+                </div>
               </div>
 
               <div
