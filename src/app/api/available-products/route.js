@@ -8,12 +8,14 @@ export async function GET() {
       SELECT
         CONCAT(br.name, ' Eggs') as product_name,
         ec.quantity as available_quantity,
-        0 as unit_price,
+        COALESCE(p.unit_price, 0) as unit_price,
         br.name as breed_name,
         br.type as breed_type
       FROM egg_collections ec
       LEFT JOIN batches b ON ec.batch_id = b.id
       LEFT JOIN breeds br ON b.breed_id = br.id
+      LEFT JOIN products pr ON pr.product_name = CONCAT(br.name, ' Eggs')
+      LEFT JOIN prices p ON pr.id = p.product_id AND p.is_current = TRUE
       WHERE ec.quantity > 0
       ORDER BY br.name
     `);
@@ -23,11 +25,13 @@ export async function GET() {
       SELECT
         CONCAT('Day Old ', br.name, ' Chicks') as product_name,
         b.current_quantity as available_quantity,
-        0 as unit_price,
+        COALESCE(p.unit_price, 0) as unit_price,
         br.name as breed_name,
         br.type as breed_type
       FROM batches b
       LEFT JOIN breeds br ON b.breed_id = br.id
+      LEFT JOIN products pr ON pr.product_name = CONCAT('Day Old ', br.name, ' Chicks')
+      LEFT JOIN prices p ON pr.id = p.product_id AND p.is_current = TRUE
       WHERE b.status = 'active' AND b.current_quantity > 0
       ORDER BY br.name
     `);
@@ -37,12 +41,14 @@ export async function GET() {
       SELECT
         CONCAT('Dressed ', br.name, ' Chicken') as product_name,
         mp.quantity_kg as available_quantity,
-        0 as unit_price,
+        COALESCE(p.unit_price, 0) as unit_price,
         br.name as breed_name,
         br.type as breed_type
       FROM meat_production mp
       LEFT JOIN batches b ON mp.batch_id = b.id
       LEFT JOIN breeds br ON b.breed_id = br.id
+      LEFT JOIN products pr ON pr.product_name = CONCAT('Dressed ', br.name, ' Chicken')
+      LEFT JOIN prices p ON pr.id = p.product_id AND p.is_current = TRUE
       WHERE mp.quantity_kg > 0
       ORDER BY br.name
     `);
@@ -52,12 +58,14 @@ export async function GET() {
       SELECT
         CONCAT(br.name, ' Manure') as product_name,
         mp.quantity_kg as available_quantity,
-        0 as unit_price,
+        COALESCE(p.unit_price, 0) as unit_price,
         br.name as breed_name,
         br.type as breed_type
       FROM manure_production mp
       LEFT JOIN batches b ON mp.batch_id = b.id
       LEFT JOIN breeds br ON b.breed_id = br.id
+      LEFT JOIN products pr ON pr.product_name = CONCAT(br.name, ' Manure')
+      LEFT JOIN prices p ON pr.id = p.product_id AND p.is_current = TRUE
       WHERE mp.quantity_kg > 0
       ORDER BY br.name
     `);

@@ -23,7 +23,7 @@ export default function ExpenseManagement() {
 
   const fetchExpenses = async () => {
     try {
-      const response = await fetch('/api/expenses');
+      const response = await fetch('/api/manager/expenses');
       if (response.ok) {
         const data = await response.json();
         setExpenses(data.data);
@@ -62,7 +62,7 @@ export default function ExpenseManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/expenses', {
+      const response = await fetch('/api/manager/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
