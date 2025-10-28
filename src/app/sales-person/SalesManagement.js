@@ -152,6 +152,12 @@ export default function SalesManagement() {
         return;
       }
       const userData = await sessionResponse.json();
+      // changed: handle different session shapes and ensure numeric id
+      const userId = userData?.id || userData?.user?.id;
+      if (!userId) {
+        alert('Unable to determine user id from session');
+        return;
+      }
 
       const response = await fetch('/api/sales', {
         method: 'POST',
@@ -164,7 +170,7 @@ export default function SalesManagement() {
           total_price: parseFloat(formData.total_price),
           payment_status: formData.payment_status,
           notes: formData.notes,
-          sold_by: userData.id,
+          sold_by: parseInt(userId, 10), // changed: send numeric id
           items: formData.items // Send items along with the sale
         }),
       });

@@ -36,7 +36,10 @@ export async function POST(request) {
     }
 
     // Verify sales person exists
-    const [salesPersonCheck] = await db.query('SELECT id FROM users WHERE id = ? AND role = "sales_person"', [sales_person_id]);
+    const [salesPersonCheck] = await db.query(
+      "SELECT id FROM users WHERE id = ? AND role = 'sales_person'",
+      [sales_person_id]
+    );
     if (salesPersonCheck.length === 0) {
       return NextResponse.json({ message: 'Sales person not found' }, { status: 404 });
     }

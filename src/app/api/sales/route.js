@@ -27,14 +27,25 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Customer, sale date, total price, and sold by are required' }, { status: 400 });
     }
 
+    // changed: ensure sold_by is a numeric id
+    const soldById = parseInt(sold_by, 10);
+    if (isNaN(soldById)) {
+      return NextResponse.json({ message: 'Invalid sold_by id' }, { status: 400 });
+    }
+
     // Verify customer exists
     const [customerCheck] = await db.query('SELECT id FROM customers WHERE id = ?', [customer_id]);
     if (customerCheck.length === 0) {
       return NextResponse.json({ message: 'Customer not found' }, { status: 404 });
     }
 
-    // Verify sold_by user exists and is a sales person
-    const [userCheck] = await db.query('SELECT id FROM users WHERE id = ? AND role = "sales_person"', [sold_by]);
+    // changed: more tolerant sales-person role check and use numeric soldById
+    console.log('Validating sold_by id:', soldById);
+    const [userCheck] = await db.query(
+      "SELECT id, role FROM users WHERE id = ? AND (role = 'sales_person' OR role = 'sales-person' OR role = 'sales person' OR role LIKE '%sales%')",
+      [soldById]
+    );
+    console.log('userCheck result:', userCheck && userCheck.length ? userCheck[0] : null);
     if (userCheck.length === 0) {
       return NextResponse.json({ message: 'Sales person not found' }, { status: 404 });
     }
@@ -43,10 +54,10 @@ export async function POST(request) {
     await db.query('START TRANSACTION');
 
     try {
-      // Insert the sale
+      // Insert the sale (use soldById)
       const [saleResult] = await db.query(
         'INSERT INTO sales (customer_id, sale_date, total_price, sold_by, payment_status, notes) VALUES (?, ?, ?, ?, ?, ?)',
-        [customer_id, sale_date, total_price, sold_by, payment_status || 'pending', notes || null]
+        [customer_id, sale_date, total_price, soldById, payment_status || 'pending', notes || null]
       );
 
       const saleId = saleResult.insertId;
@@ -88,10 +99,10 @@ export async function POST(request) {
             [newQuantity, item.product_id]
           );
 
-          // Record inventory transaction
+          // Record inventory transaction (use soldById for created_by)
           await db.query(
             'INSERT INTO inventory_transactions (product_id, batch_id, transaction_type, quantity_change, previous_quantity, new_quantity, reference_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [item.product_id, item.batch_id || null, 'sale', -item.quantity, currentQuantity, newQuantity, saleId, sold_by]
+            [item.product_id, item.batch_id || null, 'sale', -item.quantity, currentQuantity, newQuantity, saleId, soldById]
           );
 
           // Check for stock alerts
@@ -122,7 +133,7 @@ export async function POST(request) {
         customer_id,
         sale_date,
         total_price,
-        sold_by,
+        sold_by: soldById,
         payment_status: payment_status || 'pending',
         notes,
         items: items || []

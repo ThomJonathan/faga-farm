@@ -205,6 +205,12 @@ export default function OrdersManagement() {
         return;
       }
       const userData = await sessionResponse.json();
+      // changed: handle different session shapes and ensure numeric id
+      const userId = userData?.id || userData?.user?.id;
+      if (!userId) {
+        alert('Unable to determine user id from session');
+        return;
+      }
 
       // First create the order
       const orderResponse = await fetch('/api/orders', {
@@ -218,7 +224,7 @@ export default function OrdersManagement() {
           total_amount: parseFloat(formData.total_amount),
           status: formData.status,
           notes: formData.notes,
-          sales_person_id: userData.id,
+          sales_person_id: parseInt(userId, 10), // changed: send numeric id
           items: formData.items // Send items along with the order
         }),
       });
